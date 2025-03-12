@@ -1,0 +1,333 @@
+#INCLUDE "PROTHEUS.CH"
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ MATR331  ³ Autor ³ Ricardo Berti			³ Data ³17/07/2006³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Relatorio para listagem de recursividade por movimentacao   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Generico                                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+User Function MATR331()
+Local oReport
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Interface de impressao                                                  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	oReport:= ReportDef()
+	oReport:PrintDialog()
+
+Return
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Programa  ³ReportDef ³ Autor ³ Ricardo Berti 		³ Data ³17.07.2006³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³A funcao estatica ReportDef devera ser criada para todos os ³±±
+±±³          ³relatorios que poderao ser agendados pelo usuario.          ³±±
+±±³          ³                                                            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ExpO1: Objeto do relatório                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³Nenhum                                                      ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function ReportDef()
+
+Local oReport 
+Local oSection1
+Local oCell         
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Criacao do componente de impressao                                      ³
+//³                                                                        ³
+//³TReport():New                                                           ³
+//³ExpC1 : Nome do relatorio                                               ³
+//³ExpC2 : Titulo                                                          ³
+//³ExpC3 : Pergunte                                                        ³
+//³ExpB4 : Bloco de codigo que sera executado na confirmacao da impressao  ³
+//³ExpC5 : Descricao                                                       ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+oReport:= TReport():New("MATR331","Recursividade por Movimentacao","MTR331", {|oReport| ReportPrint(oReport)},"Este relatorio tem como objetivo listar as movimentacoes"+" "+"que geram recursividade no processamento do recalculo do"+" "+"custo medio.") //#########
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica as perguntas selecionadas                           ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+Pergunte("MTR331",.F.)
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Variaveis utilizadas para parametros                    	³
+//³ mv_par01     // Data de emissao inicial                     ³
+//³ mv_par02     // Data de emissao final                       ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+oSection1 := TRSection():New(oReport,"Recursividade por Movimentacao",{"SD3"}) //"Recursividade por Movimentacao"##"Itens de Movimentação Interna"
+oSection1 :SetHeaderPage(.F.)
+
+TRCell():New(oSection1,"D3_COD"		,"SD3",/*Titulo*/,/*Picture*/,/*Tamanho*/,/*lPixel*/,/*{|| code-block de impressao }*/)
+TRCell():New(oSection1,"D3_LOCAL"	,"SD3")
+TRCell():New(oSection1,"D3_TM"		,"SD3")
+TRCell():New(oSection1,"D3_DOC"		,"SD3")
+TRCell():New(oSection1,"D3_EMISSAO"	,"SD3")
+TRCell():New(oSection1,"D3_OP"		,"SD3")
+oCell:=TRCell():New(oSection1,"C2_PRODUTO"	,"SC2")
+oCell:SetTitle("Produto da "+CRLF+"Ordem de Producao") //"Produto da "###"Ordem de Producao"
+
+Return(oReport)
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Programa  ³ReportPrin³ Autor ³ Ricardo Berti 		³ Data ³17.07.2006³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³A funcao estatica ReportDef devera ser criada para todos os ³±±
+±±³          ³relatorios que poderao ser agendados pelo usuario.          ³±±
+±±³          ³                                                            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³Nenhum                                                      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ExpO1: Objeto Report do Relatorio                           ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function ReportPrint(oReport)
+
+Local oSection1	:= oReport:Section(1) 
+Local cAliasSD3	:= "SD3"
+Local cArqTemp	:= "" 
+Local cOpVazia	:= Criavar("D3_OP",.F.)
+Local cProdMNT  := SuperGetMv("MV_PRODMNT",.F.,"MANUTENCAO")
+Local aArqTemp	:= {}
+Local nx		:= 0
+Local nRegSD3	:= 0
+Local aListaReg	:= {}
+Local lRet		:= .T.
+Local lImp		:= .F. // Indica se algo foi impresso
+Local oTempTable := NIL
+Local nRecSD3 := 0
+
+// Montagem do arquivo de trabalho
+AADD(aArqTemp,{"CODIGO"		,"C",Len(SB1->B1_COD),0})
+AADD(aArqTemp,{"COMPONENTE"	,"C",Len(SB1->B1_COD),0})
+AADD(aArqTemp,{"OP"			,"C",Len(SD3->D3_OP),0})
+AADD(aArqTemp,{"ARMAZEM"	,"C",Len(SD3->D3_LOCAL),0})
+AADD(aArqTemp,{"MOVIMENTO"	,"C",Len(SD3->D3_TM),0})
+AADD(aArqTemp,{"EMISSAO"	,"D",8,0})
+AADD(aArqTemp,{"DOCUMENTO"	,"C",Len(SD3->D3_DOC),0})
+AADD(aArqTemp,{"REGISTRO"	,"N",20,0})
+AADD(aArqTemp,{"G1NIVEL"	,"C",2,0})
+AADD(aArqTemp,{"G1NIVINV"	,"C",2,0})
+
+cArqTemp := GetNextAlias()
+
+oTempTable := FWTemporaryTable():New( cArqTemp )
+oTempTable:SetFields( aArqTemp )
+oTempTable:AddIndex("indice1", {"CODIGO","COMPONENTE","OP"} )
+oTempTable:Create()
+
+// Leitura para gravacao de dados no arquivo de trabalho
+dbSelectArea("SC2")
+dbSetOrder(1)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Filtragem do relatório                                                  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+MakeSqlExpr(oReport:uParam)
+
+cAliasSD3 := GetNextAlias()
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Query do relatório da secao 1                                           ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+oReport:Section(1):BeginQuery()	
+
+BeginSql Alias cAliasSD3
+
+	SELECT D3_FILIAL,D3_OP,D3_LOCAL,D3_TM,D3_DOC,D3_COD,D3_EMISSAO,SD3.R_E_C_N_O_ SD3RECNO
+
+	FROM %table:SD3% SD3			
+
+	WHERE	D3_FILIAL   = %xFilial:SD3% AND
+			D3_ESTORNO <> 'S' AND
+			D3_OP      <> %Exp:cOpVazia% AND
+			D3_COD		<> %Exp:cProdMNT% AND
+			D3_CF      <> 'PR0' AND D3_CF <> 'PR1' AND
+			D3_EMISSAO >= %Exp:DtoS(mv_par01)% AND D3_EMISSAO  <= %Exp:DtoS(mv_par02)% AND 
+			D3_COD IN (	SELECT G1_COD FROM %table:SG1% WHERE D_E_L_E_T_ = ' ' AND G1_FIM>%Exp:DtoS(mv_par01)% AND G1_FILIAL = %xFilial:SG1%	GROUP BY G1_COD ) AND
+			SD3.%NotDel% 
+			
+	ORDER BY D3_FILIAL,D3_OP,D3_COD,D3_EMISSAO
+
+EndSql 
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Metodo EndQuery ( Classe TRSection )                                    ³
+//³                                                                        ³
+//³Prepara o relatório para executar o Embedded SQL.                       ³
+//³                                                                        ³
+//³ExpA1 : Array com os parametros do tipo Range                           ³
+//³                                                                        ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+oReport:Section(1):EndQuery(/*Array com os parametros do tipo Range*/)
+	
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Inicio da impressao do fluxo do relatorio                               ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+dbSelectArea(cAliasSD3)
+oReport:SetMeter(SD3->(LastRec()))
+
+// Grava no arquivo de trabalho
+While !oReport:Cancel() .And. !(cAliasSD3)->(Eof())
+    nRecSD3++
+	If oReport:Cancel()
+		Exit
+	EndIf	
+	// Movimenta regua
+	oReport:IncMeter()
+
+	nRegSD3:= (cAliasSD3)->SD3RECNO
+	// Posiciona na ordem de producao
+	If SC2->(dbSeek(xFilial("SC2")+(cAliasSD3)->D3_OP))
+		// Grava relacionamento no arquivo de trabalho
+		dbSelectArea(cArqTemp)
+		If !dbSeek(SC2->C2_PRODUTO+(cAliasSD3)->D3_COD+(cAliasSD3)->D3_OP)
+			RecLock(cArqTemp,.T.)
+			Replace CODIGO		With SC2->C2_PRODUTO
+			Replace COMPONENTE  With (cAliasSD3)->D3_COD
+			Replace OP			With (cAliasSD3)->D3_OP
+			Replace ARMAZEM     With (cAliasSD3)->D3_LOCAL
+			Replace MOVIMENTO   With (cAliasSD3)->D3_TM 
+			Replace EMISSAO     With (cAliasSD3)->D3_EMISSAO
+			Replace DOCUMENTO   With (cAliasSD3)->D3_DOC 
+			Replace REGISTRO    With nRegSD3
+			Replace G1NIVEL     With "01"
+			Replace G1NIVINV    With "99"
+			MsUnLock()
+		EndIf
+	EndIf
+	dbSelectArea(cAliasSD3)
+	dbSkip()
+End
+
+// Varre com recursividade o arquivo de trabalho
+dbSelectArea(cArqTemp)
+oReport:SetMeter(nRecSD3)
+dbGotop()
+
+oSection1:Init()
+
+While !oReport:Cancel() .And. (cArqTemp)->(!Eof())
+	If oReport:Cancel()
+		Exit
+	EndIf	
+	// Movimenta regua
+	oReport:IncMeter()
+	// Checa recursividade
+	IF G1NIVEL == "01"
+		aListaReg:={}
+		lRet := MR331Nivel(COMPONENTE,G1NIVEL,cArqTemp,aListaReg)
+		IF !lRet
+			nRegSD3:=Recno()
+			// Imprime caso exista problema
+			For nx:=1 to Len(aListaReg)
+				// Checa impressao do separador
+				If nx == 1 .And. lImp
+            		oReport:ThinLine()
+				EndIf
+				// Posiciona o registro
+				(cArqTemp)->(dbGoto(aListaReg[nx]))			
+				// Imprime a informacao desejada
+				oSection1:Cell("D3_COD"):SetValue(COMPONENTE)
+				oSection1:Cell("D3_LOCAL"):SetValue(ARMAZEM)
+				oSection1:Cell("D3_TM"):SetValue(MOVIMENTO)
+				oSection1:Cell("D3_DOC"):SetValue(DOCUMENTO)
+				oSection1:Cell("D3_EMISSAO"):SetValue(EMISSAO)
+				oSection1:Cell("D3_OP"):SetValue(OP)
+				oSection1:Cell("C2_PRODUTO"):SetValue(CODIGO)
+				oSection1:PrintLine()			
+				lImp := .T.
+			Next
+			dbGoto(nRegSD3)
+		Endif
+	EndIf
+	dbSkip()
+Enddo
+oSection1:Finish()			
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Apaga Arquivos temporarios                                   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+oTempTable:Delete()
+
+Return Nil
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³MR331Nivel³ Autor ³Rodrigo de A Sartorio  ³ Data ³ 25/04/06 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Acerta os niveis das estruturas no temporario              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATR331                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function MR331Nivel(cComp,cNivel,cAliasPr,aListaReg)
+Local nRec   := Recno()
+Local nSalRec:= 0
+Local lRet   := .T.
+Local lEof   := .F.
+Local nAcho  := 0
+Local cSeek  := ""
+
+If dbSeek(cComp)
+	While !Eof() .and. cComp==CODIGO
+		nSalRec:=Recno()
+		cSeek  := COMPONENTE
+		dbSeek(cSeek)	
+		lEof := Eof()
+		dbGoto(nSalRec)
+
+		IF Val(cNivel) >= 98  // Testa Erro de estrutura
+			lRet := .F.
+		Endif
+
+		If Val(cNivel)+1 > Val(G1NIVEL) .and. lRet
+			RecLock(cAliasPr,.F.)
+			Replace G1NIVEL  With Strzero(Val(cNivel)+1,2)
+			Replace G1NIVINV With Strzero(100-Val(G1NIVEL),2,0)
+			MsUnLock()
+			If !lEof
+				lRet := MR331NIVEL(COMPONENTE,G1NIVEL,cAliasPr,aListaReg)
+			Endif
+		Endif	
+		IF !lRet
+			IF Val(cNivel) < 98  // Houve erro (no nivel posterior)
+				nAcho  := ASCAN(aListaReg,nSalRec)
+				// Adiciona, na lista, o registro que originou o erro
+				If nAcho == 0
+					AADD(aListaReg,nSalRec)
+				EndIf
+			EndIf		
+			Exit
+		Endif
+		dbSkip()
+	End
+EndIf
+(cAliasPr)->(dbGoto(nRec))
+Return(lRet)

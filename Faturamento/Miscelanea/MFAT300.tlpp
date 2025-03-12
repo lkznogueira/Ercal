@@ -1,0 +1,183 @@
+#INCLUDE 'TCBROWSE.CH'
+#INCLUDE 'PROTHEUS.CH'
+#INCLUDE 'RWMAKE.CH'
+#INCLUDE 'TBICONN.CH'
+#INCLUDE 'TOTVS.CH'
+#INCLUDE 'TOPCONN.CH'
+#INCLUDE 'FWMVCDEF.CH'
+#INCLUDE 'tlpp-core.th'
+
+/*/{Protheus.doc} MFAT300
+
+@author Lucas Nogueira
+/*/
+User Function MFAT300()
+	Local cPrefixo 		:= ""	        	as character
+	Local cFiltro 		:= ""	        	as character
+	Local cCond			:= ""				as character
+	Local cParcela		:= "01"	        	as character
+	Local cNumLiq		:= ""				as character
+	Local cNumTit		:= ""				as character
+	Local cNatz			:= SuperGetMv('MV_X460CAR',.T.,'2030104') as character
+
+	Local dDtVenc		:= DaySum(dDataBase,30)	as date
+
+	Local aCab			:= {}	as array
+	Local aItens		:= {}	as array
+
+	Local nQtdParcela	:= 0				as numeric
+	Local nOpc 			:= 3 				as numeric //3-Liquidação,4-Reliquidacao,5-Cancelamento da liquidação
+	Local nI        	:= 1    			as numeric
+	Local nVlrTotal		:= 0				as numeric
+	Local nVlrParcela	:= SE1->E1_SALDO	as numeric
+
+	Local lRet		:= .F.	as logical
+
+	Private lMSHelpAuto := .T.
+	Private lMsErroAuto := .F.
+
+	If SE1->(!DbSeek(FWxFilial("SE1") + SF2->F2_PREFIXO + SF2->F2_DOC))
+		Return(.F.)
+	EndIf
+
+	cFiltro := " ( E1_FILIAL = '" + SE1->E1_FILIAL + "' "
+	cFiltro += " AND E1_CLIENTE = '" + SE1->E1_CLIENTE + "' "
+	cFiltro += " AND E1_LOJA = '" + SE1->E1_LOJA + "'  "
+	cFiltro += " AND SE1.D_E_L_E_T_ = ' ' "
+	cFiltro += " AND ( "
+
+	While SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_CLIENTE+SE1->E1_LOJA == SF2->F2_PREFIXO+SF2->F2_DOC+SF2->F2_CLIENTE+SF2->F2_LOJA
+
+		nQtdParcela	+= 1
+		nVlrTotal	+= SE1->E1_SALDO
+		cFiltro 	+= " E1_PREFIXO || E1_NUM || E1_TIPO || E1_PARCELA = '" + SE1->E1_PREFIXO + SE1->E1_NUM + SE1->E1_TIPO + SE1->E1_PARCELA + "' OR "
+
+		SE1->(DbSkip())
+	EndDo
+
+	cFiltro := Substr(cFiltro,1,Len(Alltrim(cFiltro))-2)
+	cFiltro += " ) ) "
+
+	SE1->(dbSeek(xFilial("SE1")+SF2->F2_PREFIXO+SF2->F2_DOC))
+
+	If !posSAE(nQtdParcela)
+		FWAlertError("Não foi possível posicionar na SAE para realizar Liquidação do Cartão.", "Atenção")
+		Return(.F.)
+	EndIf
+
+	If !Empty(SAE->AE_VENCFIN)
+		dDtVenc := DaySum(dDataBase,SAE->AE_VENCFIN)
+	EndIf
+
+	nVlrParcela	:= Round(nVlrTotal / nQtdParcela,TamSx3("E1_VALOR")[2])
+
+	aCab := {  	{"cCondicao" 	,cCond 					},;
+				{"cNatureza" 	,cNatz			 		},;
+				{"E1_TIPO" 		,AllTrim(SAE->AE_TIPO)	},;
+				{"cCLIENTE" 	,SAE->AE_CODCLI			},;
+				{"cLOJA" 		,SAE->AE_LOJCLI			},;
+				{"FO0_CALJUR"	,0						},;
+				{"FO0_TXJRG"	,0						},;
+				{"FO0_TXMUL"	,0						},;
+				{"nMoeda" 		,1 						}}
+
+	If SAE->AE_TIPO == "CD" //Cartão de Debito
+		dDtVenc := DataValida(DaySum(dDataBase,1),.T.)
+	EndIf
+
+	cPrefixo 	:= 'CAR'
+	cNumTit 	:= fNumLiq(cPrefixo, AllTrim(SAE->AE_TIPO))
+
+	For nI := 1 To nQtdParcela
+
+		If nI == nQtdParcela
+			nVlrParcela := nVlrParcela + ( Round(nVlrTotal,TamSx3("E1_VALOR")[2]) - ( nVlrParcela * nQtdParcela) )
+		Endif
+
+		Aadd(aItens,{	{"E1_PREFIXO"	, cPrefixo		 																},;
+						{"E1_NUM" 		, cNumTit	 																	},;
+						{"E1_PARCELA"	, cParcela																		},;
+						{"E1_VALOR" 	, nVlrParcela                                             						},;
+						{"E1_VLCRUZ" 	, nVlrParcela                                            						},;
+						{"E1_DECRESC" 	, Round((nVlrParcela* (SAE->AE_TAXA / 100) ),TamSX3("E1_DECRESC")[2])			},;
+						{"E1_VENCTO" 	, dDtVenc																		},;
+						{"E1_EMISSAO" 	, SE1->E1_EMISSAO																},;
+						{"E1_HIST" 		, SE1->E1_HIST																	}})
+
+		dDtVenc	 := DaySum(dDtVenc,SAE->AE_VENCFIN)
+		cParcela := Soma1(cParcela)
+
+	Next nI
+
+	FINA460(/*nPosArotina*/,aCab,aItens,nOpc,/*cFiltroADVPL*/,/*xNumLiq*/,/*xRotAutoVa*/,/*xOutMoe*/,/*xTxNeg*/,/*xTpTaxa*/,/*xFunOrig*/,/*xTxCalJur*/,cFiltro)
+
+	If !lMsErroAuto
+		lRet := .T.
+
+		cNumLiq := AllTrim(FO0->FO0_NUMLIQ)
+	Else
+		MostraErro()
+	EndIf
+
+Return(lRet)
+
+/*/{Protheus.doc} M460FIM 
+Posiciona SAE
+@author Lucas Nogueira
+@type function
+@since 01/2025 
+/*/
+Static Function posSAE(nQtdParcela)
+
+	Local cTipo := IIF(SC5->C5_XBANCO == "024","CD","CC")
+
+	cQuery := " SELECT SAE.R_E_C_N_O_ AS RCNO " + CRLF
+	cQuery += " FROM " + RetSqlname("SAE") + " SAE " + CRLF
+	cQuery += " WHERE SAE.AE_FILIAL = '" + FwXFilial("SAE") + "' AND SAE.D_E_L_E_T_ = '' " + CRLF
+	//cQuery += " AND SAE.AE_MSBLQL <> '1' " + CRLF
+	cQuery += " AND SAE.AE_PARCDE <= " + cValToChar(nQtdParcela) + "  AND SAE.AE_PARCATE >= " + cValToChar(nQtdParcela) + " " + CRLF
+	cQuery += " AND SAE.AE_TIPO = '" + Alltrim(cTipo) + "' " + CRLF
+
+	cQuery := ChangeQuery(cQuery)
+	cAlias := MPSysOpenQuery(cQuery)
+
+	If (cAlias)->(!Eof())
+		DbSelectArea("SAE")
+		SAE->(DbGoTo((cAlias)->RCNO))
+	Else
+		Return(.F.)
+	EndIf
+
+Return(.T.)
+
+/*/{Protheus.doc} M460FIM 
+Retorna o próximo número de liquidação de acordo com o prefixo e tipo informado
+@author Lucas Nogueira
+@type function
+@since 01/2025 
+/*/
+Static Function fNumLiq(cPrefixo, cTipo)
+
+	Local cNumMax	:= ""
+	Local cQuery	:= ""
+	Local cAlias	:= ""
+
+	cQuery := " SELECT MAX(E1_NUM) AS NUMMAX " 						+ CRLF
+	cQuery += " FROM " + RetSqlName("SE1") + " SE1 "				+ CRLF
+	cQuery += " WHERE " 											+ CRLF
+	cQuery += " SE1.E1_FILIAL 	= '" + FWxFilial("SE1") + "'  " 	+ CRLF
+	cQuery += " AND SE1.E1_TIPO 	= '" + cTipo			+ "'  "	+ CRLF
+	cQuery += " AND SE1.E1_PREFIXO 	= '" + cPrefixo			+ "'  " + CRLF
+	cQuery += " AND SE1.D_E_L_E_T_	= '' " 							+ CRLF
+	cQuery := ChangeQuery(cQuery)
+	cAlias := MPSysOpenQuery(cQuery)
+
+	cNumMax	:= Alltrim((cAlias)->NUMMAX)
+
+	If !Empty(cNumMax)
+		cNumMax	:= Soma1(AllTrim(cNumMax))
+	Else
+		cNumMax := StrZero(1,TamSx3("E1_NUM")[1])
+	Endif
+
+Return(cNumMax)

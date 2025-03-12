@@ -1,0 +1,178 @@
+#INCLUDE 'PROTHEUS.CH'
+#INCLUDE 'RWMAKE.CH'
+#INCLUDE 'TBICONN.CH'
+#INCLUDE 'TOTVS.CH'
+#INCLUDE 'TOPCONN.CH'
+
+namespace BordCR
+
+
+
+/*/{Protheus.doc} BordCRAPI
+ Conexão API BordCR
+@type class
+@author Raphael Ferreira
+@since 12/10/2021
+/*/
+Class BordCRAPI
+
+	Public Data lError      as Logical
+	Public Data lGravaLog   as Logical
+
+	Public Data cPrefixo    as character
+	Public Data cNumero     as character
+	Public Data cParcela    as character
+	Public Data cTipo       as character
+	Public Data cBanco      as character
+	Public Data cAgencia    as character
+	Public Data cConta      as character
+	Public Data cSituaca    as character
+	Public Data cNumBco     as character
+	Public Data dDataMov    as date
+
+	Public  Method new() Constructor
+	Public	Method IncluiBordero()
+	Public  Method AlteraBordero()
+
+	Private Method iniAmbiente()
+	Private Method fimAmbiente()
+
+EndClass
+
+/*
+Inicializa Ambiente Protheus e Valida Objeto oBody
+*/
+Method iniAmbiente() class BordCRAPI
+
+	Local lRet	:= .T.				As Logical
+	Local cEmp  := "01"				As Character
+	Local cFil  := "4101"			As Character
+
+	If Select('SX6') == 0
+		RpcClearEnv()
+		RpcSetType(3)
+		PREPARE ENVIRONMENT EMPRESA cEmp FILIAL cFil MODULO 'SIGAFAT'
+	Endif
+
+Return(lRet)
+
+/*
+Finaliza Ambiente.
+*/
+Method fimAmbiente() class BordCRAPI
+
+	RpcClearEnv()
+
+Return()
+
+/*
+Metodo Construtor.
+*/
+Method new() class BordCRAPI
+
+	If !Select("SX6") > 0
+		self:iniAmbiente()
+	EndIf
+
+	self:lError 		:= .F.
+	self:lGravaLog		:= .F.
+
+Return self
+
+/*
+Metodo Inclusão de Borderô
+*/
+Method IncluiBordero() class BordCRAPI
+
+	//-- Variáveis utilizadas para o controle de erro da rotina automática
+	Local aErroAuto     := {}
+	Local aTit			:= {}
+	Local aBor			:= {}
+	Local cErroRet      := ""
+	Local nCntErr       := 0
+	Local cNumBor		:= ""
+
+	Local oModel		:= FWLoadModel("AFIN001")
+	Local oModelZ00		:= Nil
+
+	Private lMsErroAuto     := .F.
+	Private lMsHelpAuto     := .T.
+	Private lAutoErrNoFile  := .T.
+
+	//Chave do título
+	aAdd(aTit,{;
+		{"E1_FILIAL",	xFilial("SE1") },;
+		{"E1_PREFIXO",	self:cPrefixo },;
+		{"E1_NUM",		self:cNumero },;
+		{"E1_PARCELA",	self:cParcela },;
+		{"E1_TIPO",		self:cTipo };
+		})
+
+	//Informações bancárias
+	//AAdd(aTit, {"AUTDATAMOV",   self:dDataMov,       Nil})
+	AAdd(aBor, {"AUTBANCO",     PadR(self:cBanco,   TamSX3("A6_COD")[1]),       Nil})
+	AAdd(aBor, {"AUTAGENCIA",   PadR(self:cAgencia, TamSX3("A6_AGENCIA")[1]),   Nil})
+	AAdd(aBor, {"AUTCONTA",     PadR(self:cConta,   TamSX3("A6_NUMCON")[1]),    Nil})
+	AAdd(aBor, {"AUTSITUACA",   PadR(self:cSituaca, TamSX3("E1_SITUACA")[1]),   Nil})
+	AAdd(aBor, {"AUTNUMBCO",    PadR(self:cNumBco,  TamSX3("E1_NUMBCO")[1]),    Nil})
+	aAdd(aBor, {"AUTNUMBOR",	PadR(cNumBor, 		TamSX3("E1_NUMBOR")[1]),	Nil})
+	AAdd(aBor, {"AUTGRVFI2",    .T.,            Nil})
+
+	MSExecAuto({|a, b| FINA060(a, b)}, 3,{aBor,aTit})
+
+	If lMsErroAuto
+		aErroAuto := GetAutoGRLog()
+
+		For nCntErr := 1 To Len(aErroAuto)
+			cErroRet += aErroAuto[nCntErr]
+		Next nCntErr
+
+		Conout(cErroRet)
+	Else
+		oModel:SetOperation(3)
+		oModel:Activate()
+
+		cNumBor	:= GetMV("MV_NUMBORR")
+
+		oModelZ00:= oModel:getModel("Z00MASTER")
+		oModelZ00:setValue("Z00_FILIAL",	xFilial("Z00"))
+		oModelZ00:setValue("Z00_NUMBOR",	cNumBor)
+		oModelZ00:setValue("Z00_DATA",		dDataBase)
+		oModelZ00:setValue("Z00_HORA",		SubStr(Time(),1,5))
+		If Val(SubStr(Time(),1,2)) > 12
+			oModelZ00:setValue("Z00_SEQ",		2)
+		Else
+			oModelZ00:setValue("Z00_SEQ",		1)
+		EndIf
+
+		//Se conseguir validar as informações
+		If oModel:VldData()
+			//Tenta realizar o Commit
+			If oModel:CommitData()
+				lOk := .T.
+				PUTMV('O5_NUMBORR', cNumBor)
+			Else
+				lOk := .F.
+			EndIf
+		Else
+			lOk := .F.
+		EndIf
+
+		oModel:DeActivate()
+		oModel:Destroy()
+	EndIf
+
+Return self
+
+/*
+Metodo Alteracao de Borderô
+*/
+Method AlteraBordero() class BordCRAPI
+
+
+	//Raphael Ferreira - Oficina5
+	//Chama rotina de alteração de Borderô
+	FINA590(3, .T.)
+//	Fa590Inclu("SE1",SE1->(Recno()),3,.T.)
+
+Return self

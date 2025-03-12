@@ -1,0 +1,376 @@
+#INCLUDE 'TCBROWSE.CH'
+#INCLUDE 'PROTHEUS.CH'
+#INCLUDE 'RWMAKE.CH'
+#INCLUDE 'TBICONN.CH'
+#INCLUDE 'TOTVS.CH'
+#INCLUDE 'TOPCONN.CH'
+#INCLUDE 'FWMVCDEF.CH'
+#INCLUDE 'tlpp-core.th'
+
+/*/{Protheus.doc} MFAT200
+Rotina que vai gerar o Pedido e NF para o Cliente do meu Cliente
+@author Lucas Nogueira
+/*/
+User Function MFAT200(cPedTriang)
+
+	Local aArea 			:= FwGetArea()	as array
+
+	Local lRet				:= .F.			as logical
+
+	Local nPContrato		:= 0			as numeric
+	Local nPItemCtr			:= 0			as numeric
+	Local nPOpc				:= 0			as numeric
+	Local nI				:= 0			as numeric
+	Local nPosMenNota		:= aScan(aCabec		, { | x | x[1] == "C5_MENNOTA" } )	as numeric
+	Local nPosPrcVen		:= aScan(aLinha[1]	, { | x | x[1] == "C6_PRCVEN" })	as numeric
+
+	Private cNomePrincipal	:= Alltrim(SA1->A1_NOME)	as character
+	Private cEndereco		:= Alltrim(SA1->A1_END) + ", " + Alltrim(SA1->A1_BAIRRO) + " - " + Alltrim(SA1->A1_MUN) + " - " + Alltrim(SA1->A1_EST) + " - " + Alltrim(SA1->A1_CEP)	as character
+
+	Private cCodNewCli    	:= Space(TamSx3("A1_COD")[1])     as character
+	Private cLojaNewCli  	:= Space(TamSx3("A1_LOJA")[1])    as character
+	Private cNomeNewCli   	:= Space(TamSx3("A1_NOME")[1])    as character
+
+	Private nVlrNewItem   	:= aLinha[1][nPosPrcVen][2]    		as numeric
+
+	Private cModelo         := "55" as character
+	Private cNF1_Serie      := Space(TamSx3("F2_SERIE")[1])     as character
+	Private cNF1_Numero     := Space(TamSx3("F2_DOC")[1])       as character
+	Private dNF1_Emissao    := Date() as date
+
+	Private aCabecNewPed	:= aClone(aCabec)
+	Private aItensNewPed	:= aClone(aLinha)
+
+	Private lMsErroAuto 	:= .F.
+
+	While Empty(cCodNewCli) .Or. Empty(cLojaNewCli) .Or. Empty(cNomeNewCli) .Or. Empty(cNF1_Serie) .Or. Empty(cNF1_Numero) .Or. Empty(dNF1_Emissao)
+		FWAlertInfo("Favor preencher o Cliente da operação, bem como os dados recebidos da NF.", "Operação Triangular")
+		telaSelNovoCli()
+	EndDo
+
+	//¦+---------------------------------------------------------+¦
+	//¦¦Gera Pedido e Fatura.
+	//¦+---------------------------------------------------------+¦
+	lRet := processaPedido()
+
+	If lRet
+		cPedTriang 	:= SC5->C5_NUM
+		cxNotaTrian	:= SC5->C5_NOTA
+
+		For nI := 1 To Len(aLinha)
+			nPContrato 	:= aScan(aLinha[nI], { | x | x[1] == "C6_CONTRAT" })
+			nPItemCtr 	:= aScan(aLinha[nI], { | x | x[1] == "C6_ITEMCON" })
+			nPOpc		:= aScan(aLinha[nI], { | x | x[1] == "C6_OPC" })
+
+			If nPContrato > 0
+				aLinha[nI][nPContrato][2] := " "
+			EndIf
+
+			If nPItemCtr > 0
+				aLinha[nI][nPItemCtr][2] := " "
+			EndIf
+
+			If nPOpc > 0
+				aLinha[nI][nPOpc][2] := " "
+			EndIf
+		Next nI
+
+		If !Empty(SC5->C5_NOTA)
+			aCabec[nPosMenNota][2] := "MODELO_NF: " + cModelo +  " SERIE: " + Alltrim(SF2->F2_SERIE) +  " NOTA: " + Alltrim(SF2->F2_DOC) + " PV: " + Alltrim(SC5->C5_NUM) + " | " + Alltrim(aCabec[nPosMenNota][2])
+		EndIf
+	EndIf
+
+	RestArea(aArea)
+
+Return(lRet)
+
+/*/{Protheus.doc} MFAT200 
+Seleciona ou inco
+@author Lucas Nogueira
+@type function
+@since 03/2025 
+/*/
+Static Function telaSelNovoCli()
+
+	Local oSize 		:= FwDefSize():New(.F.)
+
+	Local oDDlg 		:= MSDialog():New( oSize:aWindSize[1], oSize:aWindSize[2], Round(oSize:aWindSize[3] * 0.20 , 0), Round(oSize:aWindSize[4] * 0.35, 0), "", , , , , , , , , .T., , , , .F. )
+
+	Local nAButton		:= 15	as numeric
+	Local nLButton		:= 45	as numeric
+
+	Local nRow			:= 05	as numeric
+	Local nCol			:= 10	as numeric
+	Local nTamGet		:= 60	as numeric
+	Local nMidScreen	:= Round(oSize:aWindSize[4] * 0.07, 0)as numeric
+
+	Local nLabelPos		:= 1		as numeric
+	Local nTamFonte     := 8		as numeric
+	Local lBold         := .F.		as logical
+	Local cNameFonte    := "Arial"	as character
+	Local oLabelFont 	:= TFont():New(cNameFonte,,nTamFonte,,lBold,,,,,.F.,.F.) as object
+
+	Local oGetCodCLi	:= Nil	as object
+
+	oGetCodCLi := TGet():New(nRow /* nRow */,nCol/* nCol */,{ | u | If( PCount() == 0, cCodNewCli ,cCodNewCli := u ) } ,oDDlg/* oWnd */,nTamGet/* nWidth */, 010 /* nHeight */,X3Picture('A1_COD') /*cPict*/ ,;
+		{ || vldField("cCodNewCli")  } /*bValid*/ , 0/* nClrFore */, 16777215 /* nClrBack */,/*oLabelFont*/ ,.F./* uParam12 */, /* uParam13 */,.T. /* lPixel */,/* uParam15 */,.F./* uParam16 */,/* bWhen */,;
+		.F./* uParam18 */,.F./* uParam19 */,  ,.F. /* lReadOnly */,.F.  /* lPassword */,/* uParam23 */,"cCodNewCli"/* cReadVar */,/* uParam25 */,/* uParam26 */, /* uParam27 */,.T./* lHasButton */,;
+		.F./* lNoButton */, /* uParam30 */,"Cod.Cliente"/* cLabelText */,nLabelPos , oLabelFont/* oLabelFont */, 0/* nLabelColor */, /* cPlaceHold */, .F. /* lPicturePriority */,.T. /* lFocSel */ )
+	oGetCodCLi:cF3 := "SA1"
+
+	nCol += (nTamGet + 10)
+
+	TGet():New(nRow /* nRow */,nCol/* nCol */,{ | u | If( PCount() == 0, cLojaNewCli ,cLojaNewCli := u ) } ,oDDlg/* oWnd */,nTamGet/* nWidth */, 010 /* nHeight */,X3Picture('A1_LOJA') /*cPict*/ ,;
+		{ || .T. } /*bValid*/ , 0/* nClrFore */, 16777215 /* nClrBack */,/*oLabelFont*/ ,.F./* uParam12 */, /* uParam13 */,.T. /* lPixel */,/* uParam15 */,.F./* uParam16 */,/* bWhen */,;
+		.F./* uParam18 */,.F./* uParam19 */,  ,.T. /* lReadOnly */,.F.  /* lPassword */,/* uParam23 */,"cLojaNewCli"/* cReadVar */,/* uParam25 */,/* uParam26 */, /* uParam27 */,.T./* lHasButton */,;
+		.F./* lNoButton */, /* uParam30 */,"Loja"/* cLabelText */,nLabelPos , oLabelFont/* oLabelFont */, 0/* nLabelColor */, /* cPlaceHold */, .F. /* lPicturePriority */,.T. /* lFocSel */ )
+
+	nCol += (nTamGet + 10)
+
+	TGet():New(nRow /* nRow */,nCol/* nCol */,{ | u | If( PCount() == 0, cNomeNewCli , cNomeNewCli := u ) } ,oDDlg/* oWnd */,nTamGet * 2/* nWidth */, 010 /* nHeight */,X3Picture('A1_NOME') /*cPict*/ ,;
+		{ || .T. } /*bValid*/ , 0/* nClrFore */, 16777215 /* nClrBack */,/*oLabelFont*/ ,.F./* uParam12 */, /* uParam13 */,.T. /* lPixel */,/* uParam15 */,.F./* uParam16 */,/* bWhen */,;
+		.F./* uParam18 */,.F./* uParam19 */,  ,.T. /* lReadOnly */,.F.  /* lPassword */,/* uParam23 */,"cNomeNewCli"/* cReadVar */,/* uParam25 */,/* uParam26 */, /* uParam27 */,.T./* lHasButton */,;
+		.F./* lNoButton */, /* uParam30 */,"Nome"/* cLabelText */,nLabelPos , oLabelFont/* oLabelFont */, 0/* nLabelColor */, /* cPlaceHold */, .F. /* lPicturePriority */,.T. /* lFocSel */ )
+
+
+	nRow += 25
+	nCol := 10
+
+	TGet():New(nRow /* nRow */,nCol/* nCol */,{ | u | If( PCount() == 0, cNF1_Serie ,cNF1_Serie := u ) } ,oDDlg/* oWnd */,nTamGet/* nWidth */, 010 /* nHeight */, X3Picture("F2_SERIE") /*cPict*/ ,;
+		{ || .T. } /*bValid*/ , 0/* nClrFore */, 16777215 /* nClrBack */,/*oLabelFont*/ ,.F./* uParam12 */, /* uParam13 */,.T. /* lPixel */,/* uParam15 */,.F./* uParam16 */,/* bWhen */,;
+		.F./* uParam18 */,.F./* uParam19 */,  ,.F. /* lReadOnly */,.F.  /* lPassword */,/* uParam23 */,"cNF1_Serie"/* cReadVar */,/* uParam25 */,/* uParam26 */, /* uParam27 */,.T./* lHasButton */,;
+		.F./* lNoButton */, /* uParam30 */,"Serie NF"/* cLabelText */,nLabelPos , oLabelFont/* oLabelFont */, 0/* nLabelColor */, /* cPlaceHold */, .F. /* lPicturePriority */,.T. /* lFocSel */ )
+
+	nCol += (nTamGet + 10)
+
+	TGet():New(nRow /* nRow */,nCol/* nCol */,{ | u | If( PCount() == 0, cNF1_Numero ,cNF1_Numero := u ) } ,oDDlg/* oWnd */,nTamGet/* nWidth */, 010 /* nHeight */, X3Picture("F2_DOC") /*cPict*/ ,;
+		{ || .T. } /*bValid*/ , 0/* nClrFore */, 16777215 /* nClrBack */,/*oLabelFont*/ ,.F./* uParam12 */, /* uParam13 */,.T. /* lPixel */,/* uParam15 */,.F./* uParam16 */,/* bWhen */,;
+		.F./* uParam18 */,.F./* uParam19 */,  ,.F. /* lReadOnly */,.F.  /* lPassword */,/* uParam23 */,"cNF1_Numero"/* cReadVar */,/* uParam25 */,/* uParam26 */, /* uParam27 */,.T./* lHasButton */,;
+		.F./* lNoButton */, /* uParam30 */,"Numero NF"/* cLabelText */,nLabelPos , oLabelFont/* oLabelFont */, 0/* nLabelColor */, /* cPlaceHold */, .F. /* lPicturePriority */,.T. /* lFocSel */ )
+
+	nCol += (nTamGet + 10)
+
+	TGet():New(nRow /* nRow */,nCol/* nCol */,{ | u | If( PCount() == 0, dNF1_Emissao ,dNF1_Emissao := u ) } ,oDDlg/* oWnd */,nTamGet/* nWidth */, 010 /* nHeight */, X3Picture("F2_EMISSAO") /*cPict*/ ,;
+		{ || dNF1_Emissao <= Date() } /*bValid*/ , 0/* nClrFore */, 16777215 /* nClrBack */,/*oLabelFont*/ ,.F./* uParam12 */, /* uParam13 */,.T. /* lPixel */,/* uParam15 */,.F./* uParam16 */,/* bWhen */,;
+		.F./* uParam18 */,.F./* uParam19 */,  ,.F. /* lReadOnly */,.F.  /* lPassword */,/* uParam23 */,"dNF1_Emissao"/* cReadVar */,/* uParam25 */,/* uParam26 */, /* uParam27 */,.T./* lHasButton */,;
+		.F./* lNoButton */, /* uParam30 */,"Data Emissao"/* cLabelText */,nLabelPos , oLabelFont/* oLabelFont */, 0/* nLabelColor */, /* cPlaceHold */, .F. /* lPicturePriority */,.T. /* lFocSel */ )
+
+	nCol += (nTamGet + 10)
+
+	TGet():New(nRow /* nRow */,nCol/* nCol */,{ | u | If( PCount() == 0, nVlrNewItem ,nVlrNewItem := u ) } ,oDDlg/* oWnd */,nTamGet/* nWidth */, 010 /* nHeight */, X3Picture("C6_PRCVEN") /*cPict*/ ,;
+		{ || dNF1_Emissao <= Date() } /*bValid*/ , 0/* nClrFore */, 16777215 /* nClrBack */,/*oLabelFont*/ ,.F./* uParam12 */, /* uParam13 */,.T. /* lPixel */,/* uParam15 */,.F./* uParam16 */,/* bWhen */,;
+		.F./* uParam18 */,.F./* uParam19 */,  ,.F. /* lReadOnly */,.F.  /* lPassword */,/* uParam23 */,"nVlrNewItem"/* cReadVar */,/* uParam25 */,/* uParam26 */, /* uParam27 */,.T./* lHasButton */,;
+		.F./* lNoButton */, /* uParam30 */,"Valor Unitário"/* cLabelText */,nLabelPos , oLabelFont/* oLabelFont */, 0/* nLabelColor */, /* cPlaceHold */, .F. /* lPicturePriority */,.T. /* lFocSel */ )
+
+	nRow += 25
+
+	TButton():New( nRow+3, nMidScreen,"Confirmar" ,oDDlg,{|| oDDlg:End() },nLButton,nAButton,,,.F.,.T.,.F.,,.F.,,,.F. )
+
+	oDDlg:Activate(,,,.T.)
+
+	// Activate MsDialog oDDlg Center
+
+
+Return()
+
+/*/{Protheus.doc} MFAT200 
+Valida os Campos do Formulário
+@author Lucas Nogueira
+@type function
+@since 03/2025 
+/*/
+Static Function vldField(cField)
+
+	Local lRet := .T.	as logical
+
+	Do Case
+	Case cField == "cCodNewCli"
+		lRet := buscaCliente(cField)
+
+	EndCase
+
+Return(lRet)
+
+/*/{Protheus.doc} MFAT200 
+Regra para buscar Cliente
+@author Lucas Nogueira
+/*/
+Static Function buscaCliente(cField)
+
+	Local cQuery	:= ""	as character
+	Local cAlias	:= ""	as character
+
+	Local lRet		:= .T.	as logical
+
+	If !Empty(cCodNewCli)
+		cQuery := " SELECT SA1.R_E_C_N_O_ AS RCNO "
+		cQuery += " FROM " + RetSqlname("SA1") + " SA1 "
+		cQuery += " WHERE SA1.A1_FILIAL = '" + FwXFilial("SA1") + "' AND SA1.D_E_L_E_T_ = '' "
+
+		If cField == "cCodNewCli" .And. !Empty(cCodNewCli)
+			cQuery += " AND SA1.A1_COD = '" + Alltrim(cCodNewCli) + "' "
+		Endif
+
+		cQuery := ChangeQuery(cQuery)
+		cAlias := MPSysOpenQuery(cQuery)
+
+		If (cAlias)->(!Eof())
+			DbSelectArea("SA1")
+			SA1->(DbGoTo( (cAlias)->RCNO))
+
+			If SA1->A1_MSBLQL <> '2' //INATIVO
+				FWAlertError("Cliente Bloqueado!", "Atenção")
+				lRet := .F.
+			Else
+				cCodNewCli	:= SA1->A1_COD
+				cLojaNewCli	:= SA1->A1_LOJA
+				cNomeNewCli	:= SA1->A1_NOME
+			EndIf
+		Else
+			FWAlertError("Cliente não encontrado!", "Atenção")
+			lRet := .F.
+		Endif
+
+		(cAlias)->(DbCloseArea())
+	EndIf
+
+Return(lRet)
+
+
+/*/{Protheus.doc} MFAT200 
+
+@author Lucas Nogueira
+@type function
+@since 03/2025 
+/*/
+Static Function processaPedido()
+
+	Local lRet := .F.	as logical
+
+	Local nPosCodCli		:= aScan(aCabec, { | x | x[1] == "C5_CLIENTE" } )
+	Local nPosLojaCli		:= aScan(aCabec, { | x | x[1] == "C5_LOJACLI" } )
+	Local nPosMenNota		:= aScan(aCabec, { | x | x[1] == "C5_MENNOTA" } )
+
+	Local nPosVlrUnit		:= aScan(aLinha[1], { | x | x[1] == "C6_PRCVEN" } )
+	Local nPosTES			:= aScan(aLinha[1], { | x | x[1] == "C6_TES" } )
+
+	Local cNewTes			:= SuperGetMv('XX_MFAT200',.T.,'5Y7')
+	Local cCodPed			:= ""
+
+
+	//¦+---------------------------------------------------------+¦
+	//¦¦SC5
+	//¦+---------------------------------------------------------+¦
+	aCabecNewPed[nPosCodCli][2] 	:= cCodNewCli
+	aCabecNewPed[nPosLojaCli][2] 	:= cLojaNewCli
+	aCabecNewPed[nPosMenNota][2] 	:= "MODELO_NF: " + cModelo + " - SERIE: " + Alltrim(cNF1_Serie) + " - NOTA: " + cNF1_Numero + " - EMISSAO: " + Dtoc(dNF1_Emissao) + " | " + cNomePrincipal + " " + cEndereco
+
+	//¦+---------------------------------------------------------+¦
+	//¦¦SC6
+	//¦+---------------------------------------------------------+¦
+	aItensNewPed[1][nPosVlrUnit][2] 	:= nVlrNewItem
+
+	If !Empty(cNewTes)
+		aItensNewPed[1][nPosTES][2]	:= cNewTes
+	EndIf
+
+	MSExecAuto({|x,y,z|mata410(x,y,z)},aCabecNewPed,aItensNewPed,3)
+
+	If !lMsErroAuto
+
+		cCodPed := SC5->C5_NUM
+
+		RecLock("SC5",.F.)
+		SC5->C5_VEICULO := cCodPlaca 			//Insere cod veiculo para sair na Danfe
+		SC5->C5_TRANSP  := ZC3->ZC3_TRANSP
+		SC5->C5_MENNOTA := IIF(!Empty(ZC4->ZC4_MENOTA), Alltrim(SC5->C5_MENNOTA) + " | " + Alltrim(ZC4->ZC4_MENOTA), Alltrim(SC5->C5_MENNOTA))
+		SC5->C5_FRETAUT := ZC3->ZC3_FRETAU
+		SC5->(MsUnlock())
+
+		If liberaPedido(cCodPed)
+			MsgRun("Aguarde... Faturando Pedido de Venda!!!","",{|| CursorWait(),	U_NFeAutoFAT(cCodPed,ZC3->ZC3_ORDEM)  , CursorArrow()})	 	 //U_NFeAutoFAT(cPedidos,ZC3->ZC3_ORDEM)  , CursorArrow()})
+			lRet := .T.
+		EndIf
+	Else
+		MsgAlert("Erro na inclusao do Pedido de Venda para o Cliente: " + SA1->A1_NOME)
+		MostraErro()
+	EndIf
+
+Return(lRet)
+
+/*/{Protheus.doc} MFAT200 
+Libera Pedido de Venda para Faturamento
+@author Lucas Nogueira
+@type function
+@since 03/2025 
+/*/
+Static Function liberaPedido(cCodPed)
+
+	Local lAvalEst 	:= SuperGetMV("MV_XAVSTQ",.F.,.T.)
+	Local lRet		:= .T.
+
+	Local nLinhas	:= 0	as numeric
+
+	Local cQryC9	:= ""
+
+	DbSelectarea("SC5")
+	SC5->( DBSetOrder(1) )
+	If SC5->( MsSeek( xFilial("SC5") + cCodPed) )
+
+		DbSelectarea("SC6")
+		SC6->( DBSetOrder(1) )
+		If SC6->( MsSeek( xFilial("SC6") + cCodPed ) )
+			While !SC6->( EOF() ) .and. SC6->C6_NUM == cCodPed
+
+				RecLock("SC6",.F.) //Forca a atualizacao do Buffer no Top
+				Begin Transaction
+					SC6->( MaLibDoFat(SC6->(RecNo()),SC6->C6_QTDVEN,.T.,lAvalEst /*ESTOQUE*/,.T.,.T.,.F.,.T.) ) //BLOQUEIO ESTOQUE NEGATIVO 2º T
+				End Transaction
+				SC6->( MsUnLock() )
+
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³Atualiza o Flag do Pedido de Venda                                      ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+				Begin Transaction
+					SC6->(MaLiberOk({cCodPed},.T.))
+				End Transaction
+
+				SC6->( dbSkip() )
+			Enddo
+		EndIf
+	EndIf
+
+	SC6->( dbCloseArea() )
+	SC5->( MaLiberOk({ cCodPed },.T.) ) //Confirmar pedido como Aprovado se nao houver restricao por credito ou estoque
+	SC5->( DBCloseArea() )
+	SC9->( DBCloseArea() )
+
+	cQryC9:= " SELECT C9_FILIAL, C9_PEDIDO, C9_PRODUTO, C9_CLIENTE, C9_LOJA, C9_BLEST, C9_BLCRED "
+	cQryC9+= " FROM "+RetSQLName("SC9")+" "
+	cQryC9+= " WHERE "
+	cQryC9+= " D_E_L_E_T_ = ' ' "
+	cQryC9+= " AND C9_FILIAL = '"+xFilial("SC9")+"' "
+	cQryC9+= " AND C9_PEDIDO = '"+cCodPed+"'
+	cQryC9+= " AND C9_BLEST  <> ' '"
+	cQryC9+= " ORDER BY C9_PRODUTO "
+
+	if Select("QSC9") > 1
+		QSC9->( DbCloseArea() )
+	EndIf
+
+	TcQuery cQryC9 New Alias "QSC9"
+	Count To nLinhas
+
+	If nLinhas > 0
+		xmaghelpfis("Atenção","O pedido "+cCodPed+" do contrato de parceria "+cContrato+" está com restrições de estoque, a Nota Fiscal desta REMESSA TRIANGULAR não será gerada automaticamente","Procure o setor responsavel pela liberação do pedido!")
+		lRet := .F. //Nao gera nota fiscal automaticamente
+	EndIf
+
+	QSC9->( DBCloseArea() )
+
+	DbSelectArea("SC5")
+	SC5->(DbSetOrder(1))
+	SC5->(DbSeek(FwXfilial("SC5")+cCodPed))
+
+Return(lRet)
