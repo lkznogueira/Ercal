@@ -44,6 +44,7 @@ User Function FAT010()
 	Private cArq
 	Private cArq1
 	Private lInverte  := .F.
+	Private lExclui   := .F.
 	Private cMark     := GetMark()
 	Private cMarkP    := GetMark()
 	Private oMark
@@ -269,7 +270,7 @@ User Function RFATA001()
 	@ 056, 645 MSGET oxDescont VAR nxDescont Picture "@E 99,999,999.99" WHEN .F. SIZE 060, 010 OF oDlgTela COLORS 0, 16777215 PIXEL
 
 	Define Font oFont3 BOLD Name 'Courier New' Size 0, -25
-	Define Font oFont4 BOLD Name 'Arial' Size 0, -20 
+	Define Font oFont4 BOLD Name 'Arial' Size 0, -20
 	Define Font oFont5 BOLD Name 'Courier New' Size 0, -15
 	Define Font oFont6 BOLD Name 'Arial' Size 0, -50
 	oFont  := TFont():New('Courier new',,-40,.T.)
@@ -350,7 +351,11 @@ Static Function eventoNFE(_cAcao,_lYesNo)
 
 	Local cPedTriang	:= ""
 
+	Local nI			:= 1
+
 	Private aIndArq		:= {}
+	Private aUpdates	:= {}
+
 	Private cCondicao  	:= ""
 	Private lAutomato	:= .T.
 
@@ -369,6 +374,7 @@ Static Function eventoNFE(_cAcao,_lYesNo)
 		SC5->(DbSeek(FwXFilial("SC5") + cxPedido))
 
 		If _cAcao <> "Transmissao" .And. FWAlertYesNo('Confirma a EXCLUSÃO da NOTA FISCAL Triangular?', 'ATENÇÃO')
+			lExclui := .T.
 			//¦+---------------------------------------------------------+¦
 			//¦¦Executa o mesmo fonte para a operação Triangular
 			//¦+---------------------------------------------------------+¦
@@ -391,6 +397,8 @@ Static Function eventoNFE(_cAcao,_lYesNo)
 		SC5->(DbSetOrder(1))
 		SC5->(DbSeek(FwXFilial("SC5") + cxPedido))
 
+		ajusteSC6(cxPedido,cxPedido,"Limpar")
+
 	Else
 		DbSelectArea("SD2")
 		SD2->(DbSetOrder(8))
@@ -412,11 +420,14 @@ Static Function eventoNFE(_cAcao,_lYesNo)
 		SF2->(DbCloseArea())
 	EndIf
 
-	If _lYesNo .And. _cAcao <> "Transmissao"
+	If _lYesNo .And. _cAcao <> "Transmissao" .And. !lExclui
 		_lYesNo := FWAlertYesNo('Confirma a EXCLUSÃO da NOTA FISCAL?', 'ATENÇÃO')
+		lExclui	:= _lYesNo
 	Else
 		_lYesNo := .T.
 	EndIf
+
+	lExclui := .F.
 
 	If _cAcao == "Transmissao" .Or. _lYesNo
 		If !Empty(cxNota) .And. !Empty(cxSerie)
@@ -450,6 +461,12 @@ Static Function eventoNFE(_cAcao,_lYesNo)
 		If _cAcao == "Excluir"
 			If !Empty(cxPedido)
 				excluirPV()
+
+				If !Empty(cPedTriang)
+					For nI := 1 To Len(aUpdates)
+						TcSqlExec(aUpdates[nI])
+					Next nI
+				EndIf
 			EndIf
 		EndIf
 	EndIf
@@ -6000,7 +6017,7 @@ Static Function vldMDFE(_lImpressao)
 	DbSelectArea("DA3")
 	DA3->(DbSetOrder(3))
 	If DA3->(DbSeek(FwXFilial("DA3") + cxPlaca))
-		If DA3->DA3_FROVEI == "1"  /*1=Propria;2=Terceiro;3=Agregado*/
+		If DA3->DA3_XPROPR == "1"    /* DA3->DA3_FROVEI == "1" 1=Propria;2=Terceiro;3=Agregado*/
 			lDA3 := .T.
 		EndIf
 	EndIf
@@ -6052,7 +6069,7 @@ Ajusta os dados do Contrato de Novo quando eh operação tringular.
 @type function
 @since 03/2025 
 /*/
-Static Function ajusteSC6(cPedAtu,cPedTriang)
+Static Function ajusteSC6(cPedAtu,cPedTriang,cEvento)
 
 	Local nX 				:= 1	as numeric
 	Local nPContrato		:= 0			as numeric
@@ -6063,6 +6080,8 @@ Static Function ajusteSC6(cPedAtu,cPedTriang)
 	Local aItens			:= {}	as array
 
 	Local cChave			:= ""	as character
+
+	Default cEvento			:= ""
 
 	aAreaSC6  := SC6->(FWGetArea())
 
@@ -6075,7 +6094,13 @@ Static Function ajusteSC6(cPedAtu,cPedTriang)
 			
 			cChave := SC6->C6_FILIAL + SC6->C6_PRODUTO + cPedAtu + SC6->C6_ITEM
 			
-			aadd(aItens,{cChave,SC6->C6_CONTRAT,SC6->C6_ITEMCON,SC6->C6_OPC})
+			If Empty(cEvento)
+				aadd(aItens,{cChave,SC6->C6_CONTRAT,SC6->C6_ITEMCON,SC6->C6_OPC})
+			Else
+				aadd(aItens,{cChave, " ", " ", " "})
+
+				Aadd(aUpdates, "UPDATE " + RetSqlName("SC6") + " SET C6_CONTRAT = '" + SC6->C6_CONTRAT + "', C6_ITEMCON = '" + SC6->C6_ITEMCON + "', C6_OPC = '" + SC6->C6_OPC + "' WHERE C6_FILIAL = " + SC6->C6_FILIAL + " AND C6_NUM = " + cPedAtu + " AND C6_PRODUTO = '" + SC6->C6_PRODUTO + "' ")
+			EndIf
 			
 			SC6->(DbSkip())
 		EndDo
@@ -6084,25 +6109,27 @@ Static Function ajusteSC6(cPedAtu,cPedTriang)
 
 			SC6->(DbsetOrder(2))
 			If SC6->(DbSeek(aItens[nX,1]))
+				
+				If Empty(cEvento)
+					nPProduto 	:= aScan(aLinha[nX], { | x | x[1] == "C6_PRODUTO" })
+					nPContrato 	:= aScan(aLinha[nX], { | x | x[1] == "C6_CONTRAT" })
+					nPItemCtr 	:= aScan(aLinha[nX], { | x | x[1] == "C6_ITEMCON" })
+					nPOpc		:= aScan(aLinha[nX], { | x | x[1] == "C6_OPC" })
 
-				nPProduto 	:= aScan(aLinha[nX], { | x | x[1] == "C6_PRODUTO" })
-				nPContrato 	:= aScan(aLinha[nX], { | x | x[1] == "C6_CONTRAT" })
-				nPItemCtr 	:= aScan(aLinha[nX], { | x | x[1] == "C6_ITEMCON" })
-				nPOpc		:= aScan(aLinha[nX], { | x | x[1] == "C6_OPC" })
+					If aLinha[nX][nPProduto][2] == SC6->C6_PRODUTO
+						If nPContrato > 0
+							aLinha[nX][nPContrato][2] := aItens[nX,2]
+						EndIf
 
-				If aLinha[nX][nPProduto][2] == SC6->C6_PRODUTO
-					If nPContrato > 0
-						aLinha[nX][nPContrato][2] := aItens[nX,2]
-					EndIf
+						If nPItemCtr > 0
+							aLinha[nX][nPItemCtr][2] := aItens[nX,3]
+						EndIf
 
-					If nPItemCtr > 0
-						aLinha[nX][nPItemCtr][2] := aItens[nX,3]
-					EndIf
-
-					If nPOpc > 0
-						aLinha[nX][nPOpc][2] := aItens[nX,4]
-					EndIf
-				ENDIF
+						If nPOpc > 0
+							aLinha[nX][nPOpc][2] := aItens[nX,4]
+						EndIf
+					ENDIF
+				EndIf
 
 				If RecLock("SC6",.F.)
 					SC6->C6_CONTRAT := aItens[nX,2]
@@ -6114,5 +6141,8 @@ Static Function ajusteSC6(cPedAtu,cPedTriang)
 		Next nX
 	EndIf
 
-	FWRestArea(aAreaSC6)
+	If Empty(cEvento)
+		FWRestArea(aAreaSC6)
+	EndIf
+	
 Return()
