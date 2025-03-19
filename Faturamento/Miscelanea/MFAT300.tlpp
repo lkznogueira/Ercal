@@ -135,6 +135,7 @@ Static Function posSAE(nQtdParcela)
 	cQuery += " FROM " + RetSqlname("SAE") + " SAE " + CRLF
 	cQuery += " WHERE SAE.AE_FILIAL = '" + FwXFilial("SAE") + "' AND SAE.D_E_L_E_T_ = '' " + CRLF
 	//cQuery += " AND SAE.AE_MSBLQL <> '1' " + CRLF
+	cQuery += " AND SAE.AE_REDE = '" + Alltrim(SC5->C5_XBAND) + "' " + CRLF
 	cQuery += " AND SAE.AE_PARCDE <= " + cValToChar(nQtdParcela) + "  AND SAE.AE_PARCATE >= " + cValToChar(nQtdParcela) + " " + CRLF
 	cQuery += " AND SAE.AE_TIPO = '" + Alltrim(cTipo) + "' " + CRLF
 

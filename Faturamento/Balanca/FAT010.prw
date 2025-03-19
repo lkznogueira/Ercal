@@ -373,7 +373,7 @@ Static Function eventoNFE(_cAcao,_lYesNo)
 		SC5->(DbSetOrder(1))
 		SC5->(DbSeek(FwXFilial("SC5") + cxPedido))
 
-		If _cAcao <> "Transmissao" .And. FWAlertYesNo('Confirma a EXCLUSÃO da NOTA FISCAL Triangular?', 'ATENÇÃO')
+		If _cAcao <> "Transmissao" .And. FWAlertYesNo('Confirma a EXCLUSÃO da NOTA FISCAL?', 'ATENÇÃO')
 			lExclui := .T.
 			//¦+---------------------------------------------------------+¦
 			//¦¦Executa o mesmo fonte para a operação Triangular
@@ -387,17 +387,21 @@ Static Function eventoNFE(_cAcao,_lYesNo)
 			EndIf
 		EndIf
 
-		cxPedido 	:= AvKey(cXPedOld,"C5_NUM")
-		cxNota 		:= AvKey(cXNotOld,"F2_DOC")
-		cxSerie		:= AvKey(cXSerOld,"F2_SERIE")
-		cxCliente 	:= AvKey(cXCliOld,"A1_COD")
-		cxLojaCli 	:= AvKey(cXLojaOld,"A1_LOJA")
-
+		If !Empty(cPedTriang)
+			cxPedido 	:= AvKey(cXPedOld,"C5_NUM")
+			cxNota 		:= AvKey(cXNotOld,"F2_DOC")
+			cxSerie		:= AvKey(cXSerOld,"F2_SERIE")
+			cxCliente 	:= AvKey(cXCliOld,"A1_COD")
+			cxLojaCli 	:= AvKey(cXLojaOld,"A1_LOJA")
+		EndIf
+		
 		DbSelectArea("SC5")
 		SC5->(DbSetOrder(1))
 		SC5->(DbSeek(FwXFilial("SC5") + cxPedido))
 
-		ajusteSC6(cxPedido,cxPedido,"Limpar")
+		If !Empty(cPedTriang)
+			ajusteSC6(cxPedido,cxPedido,"Limpar")
+		EndIf
 
 	Else
 		DbSelectArea("SD2")
@@ -3875,10 +3879,14 @@ Static Function FaturaOrdem(ZC3Ordem)
 
 	cQuery := " SELECT ZC4_FILIAL,ADB_ITEM,ZC4_ORDEM,ZC4_CONTRA,ZC3_CODCLI, ZC3_LOJA,ZC3_PLACA,ZC3_PESFIM,ZC3_PESLIQ,ZC3_CODMOT,ADA_CONDPG, ADA_XNATUR,ADA_VEND1,ADA_VEND2,ADA_VEND3,ADA_VEND4,ADA_VEND5, ADA_TPFRET, "
 	cQuery += " ADA_COMIS1,ADA_COMIS2,ADA_COMIS3,ADA_COMIS4,ADA_COMIS5,ADB_CODPRO,ADA_XNUMBL ,ZC4_PRODUT,ADB_PRCVEN VLRUNITARIO, TRIM(ADA_XMENOT) ADA_XMENOT, ADB_TOTAL VLRTOTAL,ADB_TES, ADA_MARCA, ADA_XPED, ADA_XBANCO, "
-	cQuery += " ADB_TESCOB,ZC4_CONTRA,ZC4_QTDE,ADB_VALDES,ADB_DESC,ADA_FORMPG,ZC4_MENOTA, ADA_XFRETE, ADA_XDESP, ADA_XDESPU, ADA_XPARC1, ADA_XPARC2, ADA_XPARC3, ADA_XPARC4, ADA_XDATA1, ADA_XDATA2, ADA_XDATA3, ADA_E_PED, ADA_XDATA4 FROM "+RetSQLName("ZC4")+" Z4 "
+	cQuery += " ADB_TESCOB,ZC4_CONTRA,ZC4_QTDE,ADB_VALDES,ADB_DESC,ADA_FORMPG,ZC4_MENOTA, ADA_XFRETE, ADA_XDESP, ADA_XDESPU, ADA_XPARC1, ADA_XPARC2, ADA_XPARC3, ADA_XPARC4, ADA_XDATA1, ADA_XDATA2, ADA_XDATA3, "
+	cQuery += " ADA_E_PED, ADA_XDATA4, ADA_XBAND "
+
+	cQuery += " FROM "+RetSQLName("ZC4")+" Z4 "
 	cQuery += " INNER JOIN "+RetSQLName("ZC3")+" Z3 ON ZC4_ORDEM = ZC3_ORDEM "
 	cQuery += " INNER JOIN "+RetSQLName("ADA")+" ADA ON ZC4_CONTRA = ADA_NUMCTR "
 	cQuery += " LEFT  JOIN "+RetSQLName("ADB")+" ADB ON ADA.ADA_NUMCTR = ADB.ADB_NUMCTR "
+
 	cQuery += " WHERE "
 	cQuery += " Z3.D_E_L_E_T_ <> '*' "
 	cQuery += " AND Z4.D_E_L_E_T_ <> '*' "
@@ -3951,6 +3959,8 @@ Static Function FaturaOrdem(ZC3Ordem)
 				AADD(aCabec,{"C5_FRETE" 	,ZC3->ZC3_VLRFRE	,Nil})
 				AADD(aCabec,{"C5_XDESP" 	,ZC3->ZC3_DESPTR	,Nil}) // VERIFICAR AQUI DESPESA E NAO AUTONO
 				AADD(aCabec,{"C5_XLOTE" 	,ZC3->ZC3_XLOTE 	,Nil})
+
+				AADD(aCabec,{"C5_XBAND" 	,QZC4->ADA_XBAND 	,Nil})
 
 			EndIf
 			If QZC4->ADA_E_PED <> ' '
