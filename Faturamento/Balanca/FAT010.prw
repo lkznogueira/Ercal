@@ -538,10 +538,10 @@ Static Function excluirPV()
 		If lPodeExcluir
 
 			//Valida operação TRiangular
-			If "MODELO_NF" $ SC5->C5_MENNOTA .And. "PV" $ SC5->C5_MENNOTA // 3 NF (Cliente Final)
-				lTriang := .F.
-			Else
+			If "MODELO_NF" $ SC5->C5_MENNOTA .And. !("PV" $ SC5->C5_MENNOTA) // 3 NF (Cliente Final)
 				lTriang := .T.
+			Else
+				lTriang := .F.
 			EndIf
 
 			aAdd( aCabec, {"C5_NUM"         , SC5->C5_NUM         , Nil} )
@@ -6027,7 +6027,7 @@ Static Function vldMDFE(_lImpressao)
 	DbSelectArea("DA3")
 	DA3->(DbSetOrder(3))
 	If DA3->(DbSeek(FwXFilial("DA3") + cxPlaca))
-		If DA3->DA3_XPROPR == "1"    /* DA3->DA3_FROVEI == "1" 1=Propria;2=Terceiro;3=Agregado*/
+		If DA3->DA3_XPROP == "1"    /* DA3->DA3_FROVEI == "1" 1=Propria;2=Terceiro;3=Agregado*/
 			lDA3 := .T.
 		EndIf
 	EndIf
