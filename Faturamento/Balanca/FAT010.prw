@@ -94,11 +94,11 @@ Return()
 User Function LegendaF()
 	Local cCadastro:= "Status Ordem de Carregamento"
 
-	aCores1  := {{'BR_AMARELO',"Aguardando Carregamento" },;
-		{'BR_LARANJA',"Aguardando Pesagem Final"},;
-		{'BR_AZUL',"Aguardando Faturamento"},;
-		{'BR_VERMELHO',"Pedido(s)com Bloqueio"},;
-		{'BR_VERDE',"Ordem Faturada"}}
+	aCores1  := {	{'BR_AMARELO',"Aguardando Carregamento" },;
+					{'BR_LARANJA',"Aguardando Pesagem Final"},;
+					{'BR_AZUL',"Aguardando Faturamento"},;
+					{'BR_VERMELHO',"Pedido(s)com Bloqueio"},;
+					{'BR_VERDE',"Ordem Faturada"}}
 
 	BrwLegenda(cCadastro,"Ordem de Carregamento",acores1)
 
@@ -1734,50 +1734,6 @@ Static Function SeleCarreg()
 
 Return()
 
-	// Static Function SelecPenden()
-	// 	Local oButton1
-	// 	Local oButton2
-	// 	Local oButton3
-	// 	Local oComboBo1
-	// 	Local nComboBo1 := 2
-	// 	Local oGet1
-	// 	Local cGet1 := dDataBase //Data De
-	// 	Local oGet2
-	// 	Local cGet2 := dDataBase //Data Ate
-	// 	Local oGet3
-	// 	Local cGet3 := Space(6) //Codigo Cliente
-	// 	Local oGet4
-	// 	Local cGet4 := Space(30) //Nome Cliente
-	// 	Local oGet5
-	// 	Local cGet5 := Space(7) //Placa
-	// 	Local oGroup1
-	// 	Local oGroup2
-	// 	Local oSay1
-	// 	Local oSay2
-	// 	Local oSay3
-	// 	Local oSay4
-	// 	Local oSay5
-	// 	Local oSay6
-
-	// 	Private oWBrowse5
-	// 	Private aWBrowse5 := {}
-	// 	Private oMsnewGe5
-
-	// 	Private oDlgPEN
-
-	// 	DEFINE MSDIALOG oDlgPEN TITLE "Ordem Carregamento Pendentes:" FROM 000, 000  TO 530, 950 COLORS 0, 16777215 PIXEL
-
-	// 	@ 004, 004 GROUP oGroup1 TO 246, 472 PROMPT "Carregamentos em Andamentos Cadastros Basicos: " OF oDlgCar COLOR 0, 16777215 PIXEL
-
-	// 	oMsnewGe5 := fMSNewGe5()
-	// 	//110
-	// 	//   @ 248, 005 BUTTON oButton6 PROMPT "Excluir Ordem Carregamento"        SIZE 097, 012 OF oDlgPEN PIXEL    Action( U_ExcOrdem(oMSNewGe1:acols[oMSNewGe1:NAT][aScan(oMSNewGe1:aheader,{|x| Upper(alltrim(x[2]))=="ZC3_ORDEM"})]), PesqCarreg(2,cGet1,cGet2,cGet3,cGet4,cGet5,oComboBo1) )  //Incluir Nova Ordem de Carregamento
-	// 	@ 248, 005 BUTTON oButton1 PROMPT "Realizar Cadastros"   			  SIZE 097, 012 OF oDlgPEN PIXEL    Action(U_IncCad() ) //Incluir Nova Ordem de Carregamento
-	// 	@ 248, 432 BUTTON oButton3 PROMPT "Cancelar" 						  SIZE 037, 012 OF oDlgPEN PIXEL 	Action(oDlgPEN:End() )
-
-	// 	ACTIVATE MSDIALOG oDlgPEN CENTERED
-
-	// Return()
 
 Static Function fMSNewGe5()
 	Local nX
@@ -2473,14 +2429,14 @@ User Function FAT010A(nXOpc)
 	//@ 77+nLnAjt,295 Msget oGuiaST Var nGuiaST Picture "@E 9,999,999.99" Size 50,10 Pixel of oDlg
 	//@ 77+nLnAjt,295 Msget oGuiaST Var cGuiaST Picture "@!" Size 50,10 Pixel of oDlg
 
-//campo observacao nfe  
+	//campo observacao nfe  
 	@ 106+nLnAjt,010 Say "Obs. Contrato " Font oFont Pixel of oDlg
 	@ 106+nLnAjt,055 Msget oObs Var cObs Picture "@!" Size 135,10 when .f. Pixel of oDlg
-//Campo referente ao lote
+	//Campo referente ao lote
 	@ 106+nLnAjt,240 Say "Lote" Font oFont Pixel of oDlg
 	@ 106+nLnAjt,295 Msget oLote Var cLote Picture "@!" Size 06,10  when lFlagWhen Pixel of oDlg
 
-//despesa transporte interna
+	//despesa transporte interna
 	@ 91+nLnAjt,240 Say "Desp transp " Font oFont Pixel of oDlg
 	@ 91+nLnAjt,295 Msget oDesp Var nDesp When .F. Picture "@E 9,999,999.99" Size 50,10 Pixel of oDlg
 
@@ -2503,15 +2459,15 @@ User Function FAT010A(nXOpc)
 	EndIf
 	//verificar se tinha algo Carlos Daniel
 	if nXOpc == 1
-//  oPesoFim:Disable()
-//  oPesoFim:Refresh()
+	//  oPesoFim:Disable()
+	//  oPesoFim:Refresh()
 	EndIf
 	fNopc := 0
 
-//nxOPC = 1 = Inclusão
-//nxOPC = 2 = Alteração
-//NXOPC = 4 = Manutenção 
-//NXOPC = 3 = Visualizar
+	//nxOPC = 1 = Inclusão
+	//nxOPC = 2 = Alteração
+	//NXOPC = 4 = Manutenção 
+	//NXOPC = 3 = Visualizar
 
 	if nXOpc = 1
 		@ 220+nLnAjt,450 BUTTON oButton2 PROMPT "Incluir"  	  SIZE 045, 012 OF oDlg PIXEL  	Action (fNopc := 1 ,GravaCarga(oBrw:aCols,nPesoIni,nPesoFim,aContr,nXOpc)  )
@@ -2523,22 +2479,21 @@ User Function FAT010A(nXOpc)
 		@ 220+nLnAjt,420 BUTTON oButton2 PROMPT "Confirmar Manutenção"  SIZE 060, 012 OF oDlg PIXEL    Action (fNopc := 1 ,GravaCarga(oBrw:aCols,nPesoIni,nPesoFim,aContr,nXOpc),oDlg:End()  )
 		@ 220+nLnAjt,500 BUTTON oButton3 PROMPT "Cancelar" SIZE 045, 012 OF oDlg PIXEL  			   Action (fNopc := 2 ,oDlg:End())
 	Elseif nXOpc = 3
-//	 u_FAT010B(cCliente,cLoja,nXOpc)
-//	 u_FAT010C(aContr,nXOpc,1)	
-//	@ 220+nLnAjt,450 BUTTON oButton2 PROMPT "Visualizar"  SIZE 045, 012 OF oDlg PIXEL  	Action (fNopc := 1 ,oDlg:End())
+	//	 u_FAT010B(cCliente,cLoja,nXOpc)
+	//	 u_FAT010C(aContr,nXOpc,1)	
+	//	@ 220+nLnAjt,450 BUTTON oButton2 PROMPT "Visualizar"  SIZE 045, 012 OF oDlg PIXEL  	Action (fNopc := 1 ,oDlg:End())
 		@ 220+nLnAjt,500 BUTTON oButton3 PROMPT "Cancelar" SIZE 045, 012 OF oDlg PIXEL  Action (fNopc := 2 ,oDlg:End())
 	EndIf
 
-//Aadd(aButtons,{"BMPINCLUIR" ,{||iif(nXOpc == 1,nPesoIni:=u_FAT0510(1,nPesoIni,nPesoFim),nPesoFim:=u_FAT0510(2,nPesoIni,nPesoFim)),}, "Pesagem","Pesagem"})
+	//Aadd(aButtons,{"BMPINCLUIR" ,{||iif(nXOpc == 1,nPesoIni:=u_FAT0510(1,nPesoIni,nPesoFim),nPesoFim:=u_FAT0510(2,nPesoIni,nPesoFim)),}, "Pesagem","Pesagem"})
 	Activate MsDialog oDlg Centered //ON INIT EnchoiceBar(oDlg,{|| IIF(nXOpc == 3, oDlg:End(),u_FAT010D(oBrw:aCols,nPesoIni,nPesoFim,aContr,nXOpc))},{|| RollBackSX8(),oDlg:End()},,aButtons)
 
-//Fecha a Area e elimina os arquivos de apoio criados em disco.        
-
+	//Fecha a Area e elimina os arquivos de apoio criados em disco.        
 	if Select("QADA") > 1
 		QADA->( DbCloseArea() )
 	EndIf
 
-//iif(File(cArq + GetDBExtension()),FErase(cArq  + GetDBExtension()) ,Nil)  // QADA
+	//iif(File(cArq + GetDBExtension()),FErase(cArq  + GetDBExtension()) ,Nil)  // QADA
 
 	if fNopc = 1 .AND. ( nXOpc = 1 .OR. nXOpc = 4 ) //Caso Clique em Confirmar é Seja Incluir ou Manutenção
 
@@ -2576,7 +2531,7 @@ Return(lRet)
 
 Static Function ValMotor()
 	lRet := .T.
-//preenche com dados do cadastro de motorista
+	//preenche com dados do cadastro de motorista
 	if !Empty(cMotora)
 		DbSelectArea("DA4")
 		DA4->(DbSetOrder(1))
@@ -2673,11 +2628,11 @@ User Function FAT010B(cCodCli,cLojaCli,nXOpc)
 	AADD(_stru,{"CONTRATO"  ,"C" , 21  ,0 })
 	AADD(_stru,{"EMISSAO"   ,"D" , 10  ,0 })
 
-//cArq:= Criatrab(_stru,.T.)
-//if Select("QADA")> 1
-//	QADA->( DbCloseArea() )
-//EndIf	
-//DbUseArea(.t.,,carq,"QADA")  
+	//cArq:= Criatrab(_stru,.T.)
+	//if Select("QADA")> 1
+	//	QADA->( DbCloseArea() )
+	//EndIf	
+	//DbUseArea(.t.,,carq,"QADA")  
 
 	if Select("QADA")> 1
 		QADA->( DbCloseArea() )
@@ -2688,13 +2643,13 @@ User Function FAT010B(cCodCli,cLojaCli,nXOpc)
 	oTable:AddIndex("1", {"OKDA","CONTRATO","EMISSAO"} )
 	oTable:Create()
 
-//Define quais colunas (campos da TTRB) serao exibidas na 
+	//Define quais colunas (campos da TTRB) serao exibidas na 
 
 	aCpoBro	:= {{ "OKDA"		,, "Mark"		  ,"@!" },;
 		{ "CONTRATO"	,, "Contrato"     ,"@!" },;
 		{ "EMISSAO"  	,, "Emissão"      ,"@!" }}
 
-//Alimenta o arquivo de apoio com os registros
+	//Alimenta o arquivo de apoio com os registros
 
 	If !Empty(cCodcli) .AND. nXOpc == 1  // Inclusao
 
@@ -2750,7 +2705,7 @@ User Function FAT010B(cCodCli,cLojaCli,nXOpc)
 
 	QADA->( DbGoTop() )
 	oMark:oBrowse:Refresh()
-//Colocar refresh aqui
+	//Colocar refresh aqui
 
 Return()
 
@@ -2945,7 +2900,7 @@ Static Function Disp()
 
 	oMark:oBrowse:Refresh()
 
-// Adiciona Contratos Marcados na MsSelect no Array
+	// Adiciona Contratos Marcados na MsSelect no Array
 	QADA->(DbGotop())
 	While QADA->(!EOF())
 
@@ -2956,7 +2911,7 @@ Static Function Disp()
 		QADA->(Dbskip())
 	Enddo
 
-// Se nenhum Contrato foi marcada apaga o que estiver no aCols
+	// Se nenhum Contrato foi marcada apaga o que estiver no aCols
 	if Len(aReg) == 0
 		aCols:= {}
 	EndIf
@@ -2966,7 +2921,7 @@ Static Function Disp()
 	oBrw:SetArray(aCols)
 	oBrw:Refresh(.T.)
 
-//Chama Função que atualiza a GetDados dos Produtos
+	//Chama Função que atualiza a GetDados dos Produtos
 
 	u_FAT010C(aReg)
 
@@ -2986,7 +2941,6 @@ Return()
 ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
 */
-
 Static Function MontaEst()
 	Local nX := 0
 	Local aFieldFill := {}
@@ -3047,7 +3001,7 @@ User Function FAT010D(aDados,nPesoIni,nPesoFim,aContr,nXOpc)
 	Local lContrICM
 	Local i, x, nj
 
-//Posiciona as tabelas
+	//Posiciona as tabelas
 	SA1->(dbSetOrder(1))
 	SA1->(DbSeek( xFilial("SA1")+cCliente+iif(Empty(cLoja),"",cLoja) ) )
 
@@ -3063,10 +3017,10 @@ User Function FAT010D(aDados,nPesoIni,nPesoFim,aContr,nXOpc)
 		Return .F.
 	EndIf
 
-//if Len(aDados) == 0 .OR. Empty(aDados[1,2])
-//	Alert("Ordem de Carregamento não pode ser gerada sem Produto, informe ao menos um Contrato com Produto Disponivel !","Atenção")
-//	QADA->( DbGoTop() )
-//	Return .F.
+	//if Len(aDados) == 0 .OR. Empty(aDados[1,2])
+	//	Alert("Ordem de Carregamento não pode ser gerada sem Produto, informe ao menos um Contrato com Produto Disponivel !","Atenção")
+	//	QADA->( DbGoTop() )
+	//	Return .F.
 
 	IF .T.
 
@@ -3973,7 +3927,7 @@ Static Function FaturaOrdem(ZC3Ordem)
 				AADD(aCabec,{"C5_XPLACA"	,QZC4->ZC3_PLACA	,Nil})
 				AADD(aCabec,{"C5_VOLUME1"	,nVolume			,Nil})
 				AADD(aCabec,{"C5_ESPECI1"	,cEspecie			,Nil})
-				AADD(aCabec,{"C5_MENNOTA"	,QZC4->ZC4_MENOTA	,Nil})
+				AADD(aCabec,{"C5_MENNOTA"	, " "				,Nil}) //QZC4->ZC4_MENOTA
 				AADD(aCabec,{"C5_XDESPU"	,QZC4->ADA_XDESPU	,Nil})  //DESPESA TRANSPORTE UNITARIA
 				AADD(aCabec,{"C5_XPED"		,QZC4->ADA_XPED		,Nil})  //NUMERO DO PEDIDO BLOCO
 				AADD(aCabec,{"C5_XBANCO"	,QZC4->ADA_XBANCO	,Nil})  //FORMA DE PAGAMENTO

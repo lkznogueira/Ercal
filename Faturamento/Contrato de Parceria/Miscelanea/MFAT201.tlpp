@@ -116,7 +116,7 @@ Static Function processaPedido()
 	aCabecNewPed[nPosCodCli][2] 	:= cCodNewCli
 	aCabecNewPed[nPosLojaCli][2] 	:= cLojaNewCli
 	aCabecNewPed[nPosMenNota][2] 	:= "MODELO_NF: " + cModelo + " - SERIE: " + Alltrim(SF2->F2_SERIE) + " - NOTA: " + Alltrim(SF2->F2_DOC) + " | " + cNomePrincipal + " " + cEndereco + CRLF
-	aCabecNewPed[nPosMenNota][2] 	+= "BASE LEGAL: A presente matéria foi redigida baseando-se nos artigos 33 e 34 do Anexo XII do RICMS/GO, bem como artigo 295 do RICMS/GO, Instrução Normativa GSF nº 829/2006 e Ato Normativo GSF no. 138/1990. "
+	//aCabecNewPed[nPosMenNota][2] 	+= "BASE LEGAL: A presente matéria foi redigida baseando-se nos artigos 33 e 34 do Anexo XII do RICMS/GO, bem como artigo 295 do RICMS/GO, Instrução Normativa GSF nº 829/2006 e Ato Normativo GSF no. 138/1990. "
 
 	//¦+---------------------------------------------------------+¦
 	//¦¦SC6
