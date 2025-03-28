@@ -1,0 +1,277 @@
+#INCLUDE 'TCBROWSE.CH'
+#INCLUDE 'PROTHEUS.CH'
+#INCLUDE 'RWMAKE.CH'
+#INCLUDE 'TBICONN.CH'
+#INCLUDE 'TOTVS.CH'
+#INCLUDE 'TOPCONN.CH'
+#INCLUDE 'FWMVCDEF.CH'
+#INCLUDE 'tlpp-core.th'
+
+/*/{Protheus.doc} MFAT201
+Rotina que vai gerar o Pedido e NF para o Cliente do meu Cliente
+@author Lucas Nogueira
+/*/
+User Function MFAT201(cCodPed)
+
+	Local aArea 			:= FwGetArea()	as array
+
+	Local lRet				:= .F.			as logical
+
+	Local nPosMenNota		:= aScan(aCabec		, { | x | x[1] == "C5_MENNOTA" } )	as numeric
+	Local nPContrato		:= 0			as numeric
+	Local nPItemCtr			:= 0			as numeric
+	Local nPOpc				:= 0			as numeric
+	Local nI				:= 0			as numeric
+
+	Private cNomePrincipal	:= Alltrim(SA1->A1_NOME)	as character
+	Private cEndereco		:= Alltrim(SA1->A1_END) + ", " + Alltrim(SA1->A1_BAIRRO) + " - " + Alltrim(SA1->A1_MUN) + " - " + Alltrim(SA1->A1_EST) + " - " + Alltrim(SA1->A1_CEP)	as character
+
+	Private cCodNewCli    	:= Space(TamSx3("A1_COD")[1])     as character
+	Private cLojaNewCli  	:= Space(TamSx3("A1_LOJA")[1])    as character
+	Private cNomeNewCli   	:= Space(TamSx3("A1_NOME")[1])    as character
+
+	Private cModelo         := "55" as character
+
+	Private aCabecNewPed	:= aClone(aCabec)
+	Private aItensNewPed	:= aClone(aLinha)
+
+	Private lMsErroAuto 	:= .F.
+
+	cCodNewCli  := ADA->ADA_XCLIOR
+	cLojaNewCli := ADA->ADA_XLOJOR
+
+	DbSelectArea("SA1")
+	SA1->(DbSetOrder(1))
+	If SA1->(DbSeek(xFilial("SA1") + cCodNewCli + cLojaNewCli))
+		cNomeNewCli := Alltrim(SA1->A1_NOME) + "-" + Alltrim(SA1->A1_END) + ", " + Alltrim(SA1->A1_BAIRRO) + " - " + Alltrim(SA1->A1_MUN) + " - " + Alltrim(SA1->A1_EST) + " - " + Alltrim(SA1->A1_CEP)
+	EndIf
+
+	//¦+---------------------------------------------------------+¦
+	//¦¦Limpa os campos do Contrato para rodar o execauto
+	//¦+---------------------------------------------------------+¦
+	For nI := 1 To Len(aItensNewPed)
+		nPContrato 	:= aScan(aItensNewPed[nI], { | x | x[1] == "C6_CONTRAT" })
+		nPItemCtr 	:= aScan(aItensNewPed[nI], { | x | x[1] == "C6_ITEMCON" })
+		nPOpc		:= aScan(aItensNewPed[nI], { | x | x[1] == "C6_OPC" })
+
+		If nPContrato > 0
+			aItensNewPed[nI][nPContrato][2] := " "
+		EndIf
+
+		If nPItemCtr > 0
+			aItensNewPed[nI][nPItemCtr][2] := " "
+		EndIf
+
+		If nPOpc > 0
+			aItensNewPed[nI][nPOpc][2] := " "
+		EndIf
+	Next nI
+
+	//¦+---------------------------------------------------------+¦
+	//¦¦Gera Pedido e Fatura.
+	//¦+---------------------------------------------------------+¦
+	lRet := processaPedido()
+
+	If lRet
+		cPedTriang 	:= SC5->C5_NUM
+		cxNotaTrian	:= SC5->C5_NOTA
+		cMsgNota    := "MODELO_NF: " + cModelo +  " SERIE: " + Alltrim(SF2->F2_SERIE) +  " NOTA: " + Alltrim(SF2->F2_DOC) + " PV: " + Alltrim(SC5->C5_NUM) + " | " + Alltrim(aCabec[nPosMenNota][2])
+
+		ajusteSC6(cCodPed,cPedTriang)
+
+		If !Empty(SC5->C5_NOTA)
+			SC5->( DbSeek(xFilial("SC5")+ cCodPed) )
+			RecLock("SC5",.F.)
+			SC5->C5_MENNOTA := cMsgNota
+			SC5->(MsUnlock())
+		EndIf
+	EndIf
+
+	RestArea(aArea)
+
+Return(lRet)
+
+/*/{Protheus.doc} MFAT201 
+
+@author Lucas Nogueira
+@type function
+@since 03/2025 
+/*/
+Static Function processaPedido()
+
+	Local lRet := .F.	as logical
+
+	Local nPosCodCli		:= aScan(aCabec, { | x | x[1] == "C5_CLIENTE" } )
+	Local nPosLojaCli		:= aScan(aCabec, { | x | x[1] == "C5_LOJACLI" } )
+	Local nPosMenNota		:= aScan(aCabec, { | x | x[1] == "C5_MENNOTA" } )
+
+	Local nPosTES			:= aScan(aLinha[1], { | x | x[1] == "C6_TES" } )
+
+	Local cNewTes			:= SuperGetMv('XX_MFAT201',.T.,'5Y9')
+	Local cCodPed			:= ""
+
+	//¦+---------------------------------------------------------+¦
+	//¦¦SC5
+	//¦+---------------------------------------------------------+¦
+	aCabecNewPed[nPosCodCli][2] 	:= cCodNewCli
+	aCabecNewPed[nPosLojaCli][2] 	:= cLojaNewCli
+	aCabecNewPed[nPosMenNota][2] 	:= "MODELO_NF: " + cModelo + " - SERIE: " + Alltrim(SF2->F2_SERIE) + " - NOTA: " + Alltrim(SF2->F2_DOC) + " | " + cNomePrincipal + " " + cEndereco + CRLF
+	aCabecNewPed[nPosMenNota][2] 	+= "BASE LEGAL: A presente matéria foi redigida baseando-se nos artigos 33 e 34 do Anexo XII do RICMS/GO, bem como artigo 295 do RICMS/GO, Instrução Normativa GSF nº 829/2006 e Ato Normativo GSF no. 138/1990. "
+
+	//¦+---------------------------------------------------------+¦
+	//¦¦SC6
+	//¦+---------------------------------------------------------+¦
+	If !Empty(cNewTes)
+		aItensNewPed[1][nPosTES][2]	:= cNewTes
+	EndIf
+
+	MSExecAuto({|x,y,z|mata410(x,y,z)},aCabecNewPed,aItensNewPed,3)
+
+	If !lMsErroAuto
+
+		cCodPed := SC5->C5_NUM
+
+		RecLock("SC5",.F.)
+		SC5->C5_VEICULO := cCodPlaca 			//Insere cod veiculo para sair na Danfe
+		SC5->C5_TRANSP  := ZC3->ZC3_TRANSP
+		SC5->C5_MENNOTA := IIF(!Empty(ZC4->ZC4_MENOTA), Alltrim(SC5->C5_MENNOTA) + " | " + Alltrim(ZC4->ZC4_MENOTA), Alltrim(SC5->C5_MENNOTA))
+		SC5->C5_FRETAUT := ZC3->ZC3_FRETAU
+		SC5->(MsUnlock())
+
+		If liberaPedido(cCodPed)
+			MsgRun("Aguarde... Faturando Pedido de Venda!!!","",{|| CursorWait(),	U_NFeAutoFAT(cCodPed,ZC3->ZC3_ORDEM)  , CursorArrow()})	 	 //U_NFeAutoFAT(cPedidos,ZC3->ZC3_ORDEM)  , CursorArrow()})
+			lRet := .T.
+		EndIf
+	Else
+		MsgAlert("Erro na inclusao do Pedido de Venda para o Cliente: " + SA1->A1_NOME)
+		MostraErro()
+	EndIf
+
+Return(lRet)
+
+/*/{Protheus.doc} MFAT201 
+Libera Pedido de Venda para Faturamento
+@author Lucas Nogueira
+@type function
+@since 03/2025 
+/*/
+Static Function liberaPedido(cCodPed)
+
+	Local lAvalEst 	:= SuperGetMV("MV_XAVSTQ",.F.,.T.)
+	Local lRet		:= .T.
+
+	Local nLinhas	:= 0	as numeric
+
+	Local cQryC9	:= ""
+
+	DbSelectarea("SC5")
+	SC5->( DBSetOrder(1) )
+	If SC5->( MsSeek( xFilial("SC5") + cCodPed) )
+
+		DbSelectarea("SC6")
+		SC6->( DBSetOrder(1) )
+		If SC6->( MsSeek( xFilial("SC6") + cCodPed ) )
+			While !SC6->( EOF() ) .and. SC6->C6_NUM == cCodPed
+
+				RecLock("SC6",.F.) //Forca a atualizacao do Buffer no Top
+				Begin Transaction
+					SC6->( MaLibDoFat(SC6->(RecNo()),SC6->C6_QTDVEN,.T.,lAvalEst /*ESTOQUE*/,.T.,.T.,.F.,.T.) ) //BLOQUEIO ESTOQUE NEGATIVO 2º T
+				End Transaction
+				SC6->( MsUnLock() )
+
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³Atualiza o Flag do Pedido de Venda                                      ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+				Begin Transaction
+					SC6->(MaLiberOk({cCodPed},.T.))
+				End Transaction
+
+				SC6->( dbSkip() )
+			Enddo
+		EndIf
+	EndIf
+
+	SC6->( dbCloseArea() )
+	SC5->( MaLiberOk({ cCodPed },.T.) ) //Confirmar pedido como Aprovado se nao houver restricao por credito ou estoque
+	SC5->( DBCloseArea() )
+	SC9->( DBCloseArea() )
+
+	cQryC9:= " SELECT C9_FILIAL, C9_PEDIDO, C9_PRODUTO, C9_CLIENTE, C9_LOJA, C9_BLEST, C9_BLCRED "
+	cQryC9+= " FROM "+RetSQLName("SC9")+" "
+	cQryC9+= " WHERE "
+	cQryC9+= " D_E_L_E_T_ = ' ' "
+	cQryC9+= " AND C9_FILIAL = '"+xFilial("SC9")+"' "
+	cQryC9+= " AND C9_PEDIDO = '"+cCodPed+"'
+	cQryC9+= " AND C9_BLEST  <> ' '"
+	cQryC9+= " ORDER BY C9_PRODUTO "
+
+	if Select("QSC9") > 1
+		QSC9->( DbCloseArea() )
+	EndIf
+
+	TcQuery cQryC9 New Alias "QSC9"
+	Count To nLinhas
+
+	If nLinhas > 0
+		xmaghelpfis("Atenção","O pedido "+cCodPed+" do contrato de parceria "+cContrato+" está com restrições de estoque, a Nota Fiscal desta REMESSA TRIANGULAR não será gerada automaticamente","Procure o setor responsavel pela liberação do pedido!")
+		lRet := .F. //Nao gera nota fiscal automaticamente
+	EndIf
+
+	QSC9->( DBCloseArea() )
+
+	DbSelectArea("SC5")
+	SC5->(DbSetOrder(1))
+	SC5->(DbSeek(FwXfilial("SC5")+cCodPed))
+
+Return(lRet)
+
+
+/*/{Protheus.doc} FAT010 
+Ajusta os dados do Contrato de Novo quando eh operação tringular.
+@author Lucas Nogueira
+@type function
+@since 03/2025 
+/*/
+Static Function ajusteSC6(cPedAtu,cPedTriang)
+
+	Local nX 				:= 1	as numeric
+
+	Local aAreaSC6			:= {}	as array
+	Local aItens			:= {}	as array
+
+	Local cChave			:= ""	as character
+
+	aAreaSC6  := SC6->(FWGetArea())
+
+	//¦+---------------------------------------------------------+¦
+	//¦¦Gravo os dados do Contrato de Novo
+	//¦+---------------------------------------------------------+¦
+	SC6->(DbsetOrder(1)) // C6_FILIAL + C6_NUM + C6_ITEM + C6_PRODUTO
+	If SC6->(DbSeek(xFilial("SC6") + cPedAtu))
+		While SC6->(!Eof()) .AND. SC6->C6_FILIAL == xFilial("SC6") .AND. SC6->C6_NUM == cPedAtu
+
+			cChave := SC6->C6_FILIAL + SC6->C6_PRODUTO + cPedTriang + SC6->C6_ITEM
+
+			aadd(aItens,{cChave,SC6->C6_CONTRAT,SC6->C6_ITEMCON,SC6->C6_OPC})
+
+			SC6->(DbSkip())
+		EndDo
+
+		For nX := 1 To Len(aItens)
+
+			SC6->(DbsetOrder(2))
+			If SC6->(DbSeek(aItens[nX,1]))
+				If RecLock("SC6",.F.)
+					SC6->C6_CONTRAT := aItens[nX,2]
+					SC6->C6_ITEMCON := aItens[nX,3]
+					SC6->C6_OPC		:= aItens[nX,4]
+					SC6->(MsUnLock())
+				EndIf
+			EndIf
+		Next nX
+	EndIf
+
+	FWRestArea(aAreaSC6)
+
+Return()

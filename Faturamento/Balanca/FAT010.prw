@@ -183,10 +183,10 @@ User Function RFATA001()
 	Private lMDFE		:= .F.
 
 	Private nxVlFrete       := 0
-	Private cxNota        := Space(9)
-	Private cxNotaTrian    := Space(9)
+	Private cxNota        	:= Space(9)
+	Private cxNotaTrian    	:= Space(9)
 	Private cxPedTriang		:= ""
-	Private cxSerie        := ""
+	Private cxSerie        	:= ""
 	Private nxVlFreau       := 0
 	Private nxVlDesp        := 0
 	Private oxPesoInf
@@ -297,7 +297,7 @@ User Function RFATA001()
 	@ 155, 598 BUTTON oButton12 PROMPT "Imprimir DANFE" 					When lDANFE 			SIZE 80, 025 OF oDlgTela PIXEL  Action ( MsgRun("Pesquisando Nota Fiscal   ","Aguarde...", {|| fOpcao(7)		}) )
 
 	@ 200, 432 BUTTON oButton2  PROMPT "Incluir MDFe"						When lMDFE	 			SIZE 80, 025 OF oDlgTela PIXEL  Action ( MsgRun("Abrindo rotina MDFe"		,"Aguarde...", {||	SPEDMDFE()	}) )
-	@ 200, 515 BUTTON oButton2  PROMPT "Excluir NFE/PV"						When lExclPv 			SIZE 80, 025 OF oDlgTela PIXEL  Action ( MsgRun("Excluindo Doc.Saida "		,"Aguarde...", {||	eventoNFE("Excluir")	}) )
+	@ 200, 515 BUTTON oButton2  PROMPT "Excluir NFE/PV"						When lExclPv 			SIZE 80, 025 OF oDlgTela PIXEL  Action ( MsgRun("Excluindo Doc.Saida "		,"Aguarde...", {||	eventoNFE("Excluir"), lExclui := .F.	}) )
 
 
 	oButton1:SetCSS( getCSS('TBUTTON_01') )
@@ -369,6 +369,23 @@ Static Function eventoNFE(_cAcao,_lYesNo)
 		cxCliente 	:= AvKey(cxCliente,"A1_COD")
 		cxLojaCli 	:= AvKey(cxLojaCli,"A1_LOJA")
 
+		If Empty(cxPedido)
+			DbSelectArea("SD2")
+			SD2->(DbSetOrder(8))
+			If SD2->(DbSeek(xFilial("SD2") + SC5->C5_NUM + '01'))
+				cxNota  	:= SD2->D2_DOC
+				cxSerie 	:= SD2->D2_SERIE
+				cxCliente	:= SD2->D2_CLIENTE
+				cxLojaCli	:= SD2->D2_LOJA
+			EndIf
+
+			cxPedido 	:= AvKey(SC5->C5_NUM,"C5_NUM")
+			cxNota 		:= AvKey(cxNota,"F2_DOC")
+			cxSerie		:= AvKey(cxSerie,"F2_SERIE")
+			cxCliente 	:= AvKey(cxCliente,"A1_COD")
+			cxLojaCli 	:= AvKey(cxLojaCli,"A1_LOJA")
+		EndIf
+
 		DbSelectArea("SC5")
 		SC5->(DbSetOrder(1))
 		SC5->(DbSeek(FwXFilial("SC5") + cxPedido))
@@ -394,7 +411,7 @@ Static Function eventoNFE(_cAcao,_lYesNo)
 			cxCliente 	:= AvKey(cXCliOld,"A1_COD")
 			cxLojaCli 	:= AvKey(cXLojaOld,"A1_LOJA")
 		EndIf
-		
+
 		DbSelectArea("SC5")
 		SC5->(DbSetOrder(1))
 		SC5->(DbSeek(FwXFilial("SC5") + cxPedido))
@@ -430,8 +447,6 @@ Static Function eventoNFE(_cAcao,_lYesNo)
 	Else
 		_lYesNo := .T.
 	EndIf
-
-	lExclui := .F.
 
 	If _cAcao == "Transmissao" .Or. _lYesNo
 		If !Empty(cxNota) .And. !Empty(cxSerie)
@@ -491,7 +506,7 @@ Excluir P.V.
 @type function
 @since 01/2025 
 /*/
-Static Function excluirPV()
+Static Function excluirPV(_cPedido)
 	local aCabec 		:= {}
 
 	local lFaturado 	:= .F.
@@ -499,7 +514,13 @@ Static Function excluirPV()
 	local lPodeExcluir 	:= .T.
 	Local lTriang		:= .F.
 
-	cxPedido := AvKey(cxPedido,"C5_NUM")
+	Default _cPedido	:= ""
+
+	If !Empty(_cPedido)
+		cxPedido := _cPedido
+	Else
+		cxPedido := AvKey(cxPedido,"C5_NUM")
+	EndIf
 
 	If !Empty(cxPedido)
 		DbSelectArea("SC5")
@@ -1208,13 +1229,13 @@ Busca Nota Fiscal DANFE
 @since 01/2025 
 /*/
 Static Function BuscaNotaF(cxOrdem)
-	Local oButton20
-	Local oButton21
-	Local oGroup1
+	// Local oButton20
+	// Local oButton21
+	// Local oGroup1
 
-	Private oWBrowse6
-	Private aWBrowse6 := {}
-	Private oMsnewGe6
+	// Private oWBrowse6
+	// Private aWBrowse6 := {}
+	// Private oMsnewGe6
 
 	Private oDanfe
 
@@ -1223,15 +1244,17 @@ Static Function BuscaNotaF(cxOrdem)
 		Return()
 	EndIf
 
-	DEFINE MSDIALOG oDanfe TITLE "Impressão Nota Fiscal (DANFE)" FROM 000, 000  TO 300, 900 COLORS 0, 16777215 PIXEL
+	U_ImpDanfe()
 
-	@ 004, 003 GROUP oGroup1 TO 128, 449 PROMPT "Escolha a Nota Fiscal:" OF oDanfe COLOR 0, 16777215 PIXEL
-	@ 133, 320 BUTTON oButton20 PROMPT "Imprimir DANFE" SIZE 080, 012 OF oDanfe PIXEL	Action(U_ImpDanfe(oMsnewGe6:ACOLS[oMsnewGe6:NAT][6],oMsnewGe6:ACOLS[oMsnewGe6:NAT][7],oMsnewGe6:ACOLS[oMsnewGe6:NAT][8],oMsnewGe6:ACOLS[oMsnewGe6:NAT][9],oMsnewGe6:ACOLS[oMsnewGe6:NAT][10],oMsnewGe6:ACOLS[oMsnewGe6:NAT][11]))
-	@ 133, 410 BUTTON oButton21 PROMPT "Fechar" SIZE 037, 012 OF oDanfe PIXEL Action(oDanfe:End())
+	// DEFINE MSDIALOG oDanfe TITLE "Impressão Nota Fiscal (DANFE)" FROM 000, 000  TO 300, 900 COLORS 0, 16777215 PIXEL
 
-	oMsnewGe6 := fMSNewGe6(cxOrdem)
+	// @ 004, 003 GROUP oGroup1 TO 128, 449 PROMPT "Escolha a Nota Fiscal:" OF oDanfe COLOR 0, 16777215 PIXEL
+	// @ 133, 320 BUTTON oButton20 PROMPT "Imprimir DANFE" SIZE 080, 012 OF oDanfe PIXEL	Action(U_ImpDanfe(oMsnewGe6:ACOLS[oMsnewGe6:NAT][6],oMsnewGe6:ACOLS[oMsnewGe6:NAT][7],oMsnewGe6:ACOLS[oMsnewGe6:NAT][8],oMsnewGe6:ACOLS[oMsnewGe6:NAT][9],oMsnewGe6:ACOLS[oMsnewGe6:NAT][10],oMsnewGe6:ACOLS[oMsnewGe6:NAT][11]))
+	// @ 133, 410 BUTTON oButton21 PROMPT "Fechar" SIZE 037, 012 OF oDanfe PIXEL Action(oDanfe:End())
 
-	ACTIVATE MSDIALOG oDanfe CENTERED
+	// oMsnewGe6 := fMSNewGe6(cxOrdem)
+
+	// ACTIVATE MSDIALOG oDanfe CENTERED
 
 Return()
 
@@ -1711,50 +1734,50 @@ Static Function SeleCarreg()
 
 Return()
 
-// Static Function SelecPenden()
-// 	Local oButton1
-// 	Local oButton2
-// 	Local oButton3
-// 	Local oComboBo1
-// 	Local nComboBo1 := 2
-// 	Local oGet1
-// 	Local cGet1 := dDataBase //Data De
-// 	Local oGet2
-// 	Local cGet2 := dDataBase //Data Ate
-// 	Local oGet3
-// 	Local cGet3 := Space(6) //Codigo Cliente
-// 	Local oGet4
-// 	Local cGet4 := Space(30) //Nome Cliente
-// 	Local oGet5
-// 	Local cGet5 := Space(7) //Placa
-// 	Local oGroup1
-// 	Local oGroup2
-// 	Local oSay1
-// 	Local oSay2
-// 	Local oSay3
-// 	Local oSay4
-// 	Local oSay5
-// 	Local oSay6
+	// Static Function SelecPenden()
+	// 	Local oButton1
+	// 	Local oButton2
+	// 	Local oButton3
+	// 	Local oComboBo1
+	// 	Local nComboBo1 := 2
+	// 	Local oGet1
+	// 	Local cGet1 := dDataBase //Data De
+	// 	Local oGet2
+	// 	Local cGet2 := dDataBase //Data Ate
+	// 	Local oGet3
+	// 	Local cGet3 := Space(6) //Codigo Cliente
+	// 	Local oGet4
+	// 	Local cGet4 := Space(30) //Nome Cliente
+	// 	Local oGet5
+	// 	Local cGet5 := Space(7) //Placa
+	// 	Local oGroup1
+	// 	Local oGroup2
+	// 	Local oSay1
+	// 	Local oSay2
+	// 	Local oSay3
+	// 	Local oSay4
+	// 	Local oSay5
+	// 	Local oSay6
 
-// 	Private oWBrowse5
-// 	Private aWBrowse5 := {}
-// 	Private oMsnewGe5
+	// 	Private oWBrowse5
+	// 	Private aWBrowse5 := {}
+	// 	Private oMsnewGe5
 
-// 	Private oDlgPEN
+	// 	Private oDlgPEN
 
-// 	DEFINE MSDIALOG oDlgPEN TITLE "Ordem Carregamento Pendentes:" FROM 000, 000  TO 530, 950 COLORS 0, 16777215 PIXEL
+	// 	DEFINE MSDIALOG oDlgPEN TITLE "Ordem Carregamento Pendentes:" FROM 000, 000  TO 530, 950 COLORS 0, 16777215 PIXEL
 
-// 	@ 004, 004 GROUP oGroup1 TO 246, 472 PROMPT "Carregamentos em Andamentos Cadastros Basicos: " OF oDlgCar COLOR 0, 16777215 PIXEL
+	// 	@ 004, 004 GROUP oGroup1 TO 246, 472 PROMPT "Carregamentos em Andamentos Cadastros Basicos: " OF oDlgCar COLOR 0, 16777215 PIXEL
 
-// 	oMsnewGe5 := fMSNewGe5()
-// 	//110
-// 	//   @ 248, 005 BUTTON oButton6 PROMPT "Excluir Ordem Carregamento"        SIZE 097, 012 OF oDlgPEN PIXEL    Action( U_ExcOrdem(oMSNewGe1:acols[oMSNewGe1:NAT][aScan(oMSNewGe1:aheader,{|x| Upper(alltrim(x[2]))=="ZC3_ORDEM"})]), PesqCarreg(2,cGet1,cGet2,cGet3,cGet4,cGet5,oComboBo1) )  //Incluir Nova Ordem de Carregamento
-// 	@ 248, 005 BUTTON oButton1 PROMPT "Realizar Cadastros"   			  SIZE 097, 012 OF oDlgPEN PIXEL    Action(U_IncCad() ) //Incluir Nova Ordem de Carregamento
-// 	@ 248, 432 BUTTON oButton3 PROMPT "Cancelar" 						  SIZE 037, 012 OF oDlgPEN PIXEL 	Action(oDlgPEN:End() )
+	// 	oMsnewGe5 := fMSNewGe5()
+	// 	//110
+	// 	//   @ 248, 005 BUTTON oButton6 PROMPT "Excluir Ordem Carregamento"        SIZE 097, 012 OF oDlgPEN PIXEL    Action( U_ExcOrdem(oMSNewGe1:acols[oMSNewGe1:NAT][aScan(oMSNewGe1:aheader,{|x| Upper(alltrim(x[2]))=="ZC3_ORDEM"})]), PesqCarreg(2,cGet1,cGet2,cGet3,cGet4,cGet5,oComboBo1) )  //Incluir Nova Ordem de Carregamento
+	// 	@ 248, 005 BUTTON oButton1 PROMPT "Realizar Cadastros"   			  SIZE 097, 012 OF oDlgPEN PIXEL    Action(U_IncCad() ) //Incluir Nova Ordem de Carregamento
+	// 	@ 248, 432 BUTTON oButton3 PROMPT "Cancelar" 						  SIZE 037, 012 OF oDlgPEN PIXEL 	Action(oDlgPEN:End() )
 
-// 	ACTIVATE MSDIALOG oDlgPEN CENTERED
+	// 	ACTIVATE MSDIALOG oDlgPEN CENTERED
 
-// Return()
+	// Return()
 
 Static Function fMSNewGe5()
 	Local nX
@@ -1891,6 +1914,24 @@ Static Function BuscaCarga(cNumOrdem,_xcNopc)
 		nxVlFreau   := ZC3->ZC3_FRETAU
 		nxVlDesp    := ZC3->ZC3_DESPTR
 		cxPedido	:= ZC3->ZC3_PEDIDO
+
+		DbSelectArea("ZC4")
+		ZC4->(DbGoTop())
+		ZC4->(DbSetOrder(1))
+		If ZC4->(DbSeek(xFilial("ZC4")+cNumOrdem))
+
+			dbSelectArea("ADA")
+			ADA->(dbSetOrder(1))
+			ADA->(dbSeek(xFilial("ADA")+ ZC4->ZC4_CONTRA))
+
+
+			dbSelectArea("ADB")
+			ADB->(dbSetOrder(1))
+			ADB->(dbSeek(xFilial("ADB")+ ADA->ADA_NUMCTR))
+		Else
+			FWAlertError("Nao foi possível posicionar no contrato!")
+			Return()
+		EndIf
 
 		DbSelectArea("SC5")
 		SC5->(DbSetOrder(1))
@@ -2172,22 +2213,13 @@ Static Function PesqCarreg(Nopc,cDatade,cDataAte,cCodCli,cNomeCli,cPlaca,cStatus
 
 Return()
 
-/*
-ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
-±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
-±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
-±±ºPrograma  ³FAT010    ºAutor  ³Gontijo Consultoria º Data ³  07/28/17   º±±
-±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
-±±ºDesc.     ³ Gerenciamento Botão da Tela por Status.                    º±±
-±±º          ³                                                            º±±
-±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
-±±ºUso       ³ Montividiu                                                 º±±
-±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
-±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
-ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
-*/
+/*/{Protheus.doc} FAT010 
+
+@type function
+/*/
 Static Function BotonTela(cStatus)
 	Local cRetorno := ''
+
 	if cStatus = '1'
 		cRetorno   := 'STATUS: Aguardando Carregamento'
 		lpesini    := .T.
@@ -2233,7 +2265,7 @@ Static Function BotonTela(cStatus)
 		lExclPv	   := .F.
 		lMDFE	   := .F.
 	Elseif cStatus = '5'
-		cRetorno   := 'STATUS: FATURADO. ' + cxNota + IIF(!Empty(cxNotaTrian), " (Remessa Simbolica)" + CHR(13)+CHR(10) + Space(38) + cxNotaTrian + " (Remessa Por Conta e Ordem)", '')
+		cRetorno   := 'STATUS: FATURADO. ' + cxNota + IIF(!Empty(cxNotaTrian), IIF(ADB->ADB_XTIPO == "10"," (Remessa Simbolica)"," (NF Cliente)") + CHR(13)+CHR(10) + Space(38) + cxNotaTrian + IIF(ADB->ADB_XTIPO == "10"," (Remessa Por Conta e Ordem)"," (NF Industria)") , '')
 		lpesini    := .F.
 		lpesfim    := .F.
 		lnfe       := .F.
@@ -2266,7 +2298,7 @@ Static Function RetnStatus(cStatus)
 		cRetorno   := 'STATUS: Pedido com Bloqueio '
 
 	Elseif cStatus = '5'
-		cRetorno   := 'STATUS: FATURADO. ' + cxNota + IIF(!Empty(cxNotaTrian), " (Remessa Simbolica)" + CHR(13)+CHR(10) + Space(38) + cxNotaTrian + " (Remessa Por Conta e Ordem)", '')
+		cRetorno   := 'STATUS: FATURADO. ' + cxNota + IIF(!Empty(cxNotaTrian), IIF(ADB->ADB_XTIPO == "10"," (Remessa Simbolica)"," (NF Cliente)") + CHR(13)+CHR(10) + Space(38) + cxNotaTrian + IIF(ADB->ADB_XTIPO == "10"," (Remessa Por Conta e Ordem)"," (NF Industria)") , '')
 
 	EndIf
 
@@ -2354,8 +2386,8 @@ User Function FAT010A(nXOpc)
 	Private cLote := Space(6)
 	Private oLote
 	Private lFlagWhen := .F.
-//cObs  := ADA->ADA_XMENOT //carlos Daniel
-// Valida se registro que esta tentando editar esta com Status Finalizado
+	//cObs  := ADA->ADA_XMENOT //carlos Daniel
+	// Valida se registro que esta tentando editar esta com Status Finalizado
 	if nXopc == 2 // AlteraçãO
 
 		cStatus:= Posicione("ZC3",1,xFilial("ZC3") + ZC3->ZC3_ORDEM,"ZC3_STATUS")
@@ -2408,13 +2440,13 @@ User Function FAT010A(nXOpc)
 
 	oMotora:bLostFocus := {||IIF(!Empty(cMotora), (cNome:= SUBSTR(DA4->DA4_NOME,1,40),cTransp :=DA4->DA4_XTRANS ),"")}
 
-/*
-@ 32+nLnAjt,130 Say "Placa " Font oFont Pixel of oDlg
-@ 32+nLnAjt,150 Msget oPlaca Var cPlaca F3 "XDA3"  Size 50,10 Pixel of oDlg Valid(ValPlaca(cPlaca))    //@ 32+nLnAjt,150 Msget oPlaca Var cPlaca F3 "XDA3" Valid ( IIF(ExistCpo("DA3",cPlaca,3) .OR. !Vazio(cPlaca) , (cMotora := POSICIONE("DA4",1,XFILIAL("DA4")+DA3->DA3_MOTORI,"DA4_COD") ,cNome := POSICIONE("DA4",1,XFILIAL("DA4")+DA3->DA3_MOTORI,"DA4_NOME")) ,.F.) ) Size 50,10 Pixel of oDlg  
-@ 47+nLnAjt,10 Say "Motorista " Font oFont Pixel of oDlg
-@ 47+nLnAjt,55 Msget oMotora Var cMotora F3 "DA4" Size 50,10 Pixel of oDlg  Valid(ValMotor(cPlaca))  //Valid (ExistCpo("DA4",,1) .OR. !Vazio(cMotora))  //@ 47+nLnAjt,55 Msget oMotora Var cMotora F3 "DA4" Valid (ExistCpo("DA4",,1) .OR. !Vazio(cMotora)) Size 50,10 Pixel of oDlg   
-//oMotora:bLostFocus := {||IIF(!Empty(cMotora), (cNome:= SUBSTR(DA4->DA4_NOME,1,40),cTransp :=DA4->DA4_XTRANS ),"")}
-*/
+	/*
+	@ 32+nLnAjt,130 Say "Placa " Font oFont Pixel of oDlg
+	@ 32+nLnAjt,150 Msget oPlaca Var cPlaca F3 "XDA3"  Size 50,10 Pixel of oDlg Valid(ValPlaca(cPlaca))    //@ 32+nLnAjt,150 Msget oPlaca Var cPlaca F3 "XDA3" Valid ( IIF(ExistCpo("DA3",cPlaca,3) .OR. !Vazio(cPlaca) , (cMotora := POSICIONE("DA4",1,XFILIAL("DA4")+DA3->DA3_MOTORI,"DA4_COD") ,cNome := POSICIONE("DA4",1,XFILIAL("DA4")+DA3->DA3_MOTORI,"DA4_NOME")) ,.F.) ) Size 50,10 Pixel of oDlg  
+	@ 47+nLnAjt,10 Say "Motorista " Font oFont Pixel of oDlg
+	@ 47+nLnAjt,55 Msget oMotora Var cMotora F3 "DA4" Size 50,10 Pixel of oDlg  Valid(ValMotor(cPlaca))  //Valid (ExistCpo("DA4",,1) .OR. !Vazio(cMotora))  //@ 47+nLnAjt,55 Msget oMotora Var cMotora F3 "DA4" Valid (ExistCpo("DA4",,1) .OR. !Vazio(cMotora)) Size 50,10 Pixel of oDlg   
+	//oMotora:bLostFocus := {||IIF(!Empty(cMotora), (cNome:= SUBSTR(DA4->DA4_NOME,1,40),cTransp :=DA4->DA4_XTRANS ),"")}
+	*/
 
 	@ 47+nLnAjt,130 Say "Nome Motorista " Font oFont Pixel of oDlg
 	@ 47+nLnAjt,195 Msget oNome Var cNome  When .F. Size 150,10 Pixel of oDlg
@@ -2438,8 +2470,8 @@ User Function FAT010A(nXOpc)
 
 	@ 77+nLnAjt,240 Say "Frete " Font oFont Pixel of oDlg
 	@ 77+nLnAjt,295 Msget oVlrFre Var nVlrFre When .F. Picture "@E 9,999,999.99" Size 50,10 Pixel of oDlg
-//@ 77+nLnAjt,295 Msget oGuiaST Var nGuiaST Picture "@E 9,999,999.99" Size 50,10 Pixel of oDlg
-//@ 77+nLnAjt,295 Msget oGuiaST Var cGuiaST Picture "@!" Size 50,10 Pixel of oDlg 
+	//@ 77+nLnAjt,295 Msget oGuiaST Var nGuiaST Picture "@E 9,999,999.99" Size 50,10 Pixel of oDlg
+	//@ 77+nLnAjt,295 Msget oGuiaST Var cGuiaST Picture "@!" Size 50,10 Pixel of oDlg
 
 //campo observacao nfe  
 	@ 106+nLnAjt,010 Say "Obs. Contrato " Font oFont Pixel of oDlg
@@ -2960,18 +2992,6 @@ Static Function MontaEst()
 	Local aFieldFill := {}
 	Local aFields := {"ZC4_ITEM","ZC4_CONTRA","ZC4_PRODUT","ZC4_DESCRI","ZC4_MENOTA","ZC4_QTDE"} //carlos tela baixo
 
-//	SX3->( DbSetOrder(2) )
-//	for nX:=1 to len(aFields)
-//	
-//		if SX3->( DbSeek(aFields[nX]) )
-//			Aadd(aHeader, {AllTrim(X3Titulo()),SX3->X3_CAMPO,SX3->X3_PICTURE,SX3->X3_TAMANHO,SX3->X3_DECIMAL,'',;
-//						SX3->X3_USADO,SX3->X3_TIPO,SX3->X3_F3,SX3->X3_CONTEXT,SX3->X3_CBOX,SX3->X3_RELACAO})
-//		EndIf
-//		if nX == 4 //ajuste carlos definir tamanho campo descricao
-//			aHeader[4][4] = 30
-//		EndIf
-//	next nX
-
 	For nX := 1 to Len(aFields)
 
 		Aadd(aHeader, {	GetSx3Cache(aFields[nX],"X3_TITULO"),;
@@ -2994,13 +3014,12 @@ Static Function MontaEst()
 	Next nX
 
 	For nX := 1 to Len(aFields)
-//		If SX3->( DbSeek(aFields[nX]) )
 		Aadd(aFieldFill, CriaVar(aFields[nX]))
-//		EndIf
 	Next nX
 
 	Aadd(aFieldFill, .F.)
 	Aadd(aCols, aFieldFill)
+
 Return()
 
 
@@ -3364,9 +3383,7 @@ User Function VaLinhaF(lGrava)
 		EndIf
 
 		if lGrava
-
 			Return .T.
-
 		EndIf
 
 		cQtdePrd := Posicione("ADB",3,xFilial("ADB")+oBrw:aCols[oBrw:nAT,2]+oBrw:aCols[oBrw:nAT,3],"ADB_QUANT")   //Filial + Contrato + Produto
@@ -3382,8 +3399,13 @@ User Function VaLinhaF(lGrava)
 				Return .F.
 			EndIf
 		EndIf
-		if !Empty(M->ZC4_QTDE)
-			if  M->ZC4_QTDE > cQtdePrd     // Valida se Quantidade informada é Maior que a quantidade do Contrato
+
+		If Empty(M->ZC4_QTDE)
+			M->ZC4_QTDE := (nxPesoLiq / 1000)
+		EndIf
+
+		If !Empty(M->ZC4_QTDE)
+			If  M->ZC4_QTDE > cQtdePrd     // Valida se Quantidade informada é Maior que a quantidade do Contrato
 				Alert("Quantidade Informada não pode ser Maior que o Saldo disponivel no Contrato !","Atenção")
 				Return .F.
 			Else
@@ -3392,8 +3414,8 @@ User Function VaLinhaF(lGrava)
 				oPesoInf:Refresh()
 			EndIf
 		EndIf
-		// Calcula Peso Informado
 	EndIf
+
 Return .T.
 
 
@@ -3554,7 +3576,12 @@ User Function ValPesoF(lConfirma,nPesoIni,nPesoFim,nOpc)
 	//Local nPalet   := 0
 	Local nPosQtde := aScan(aHeader,{ |x| Upper(AllTrim(x[2])) == "ZC4_QTDE" })
 	Local nPosProd := aScan(aHeader,{ |x| Upper(AllTrim(x[2])) == "ZC4_PRODUT" })
-	Loca i := 0
+	Local i := 0
+
+
+	If Type("n") <> " N"
+		n := 1
+	EndIf
 
 	if !lConfirma  // Chamada somente para atualizar peso informado
 		nPesoInf := 0
@@ -4065,10 +4092,17 @@ Static Function GeraPedido(cOrdem,cCodPlaca,cNumPCom)
 	//¦+---------------------------------------------------------+¦
 	//¦¦SE FOR BRITACAL + OPERAÇÃO 09 OU 10 (Operacao Triangular)
 	//¦+---------------------------------------------------------+¦
-	If cEmpAnt == "50" .And. ADB->ADB_XTIPO $ "09/10"
-		If ExistBlock("MFAT200")
-			If !U_MFAT200(@cPedTriang)
-				Return(.T.)
+	If cEmpAnt == "50"
+		If ADB->ADB_XTIPO == "10"
+			If ExistBlock("MFAT200")
+				If !U_MFAT200(@cPedTriang)
+					Return(.T.)
+				EndIf
+			EndIf
+		ElseIf ADB->ADB_XTIPO == "09"
+			If Empty(ADA->ADA_XCLIOR) .Or. Empty(ADA->ADA_XLOJOR)
+				FWAlertError("Tipo do Contrato requer Cliente e Loja de Industrializacao. ")
+				Return()
 			EndIf
 		EndIf
 	EndIf
@@ -4098,7 +4132,6 @@ Static Function GeraPedido(cOrdem,cCodPlaca,cNumPCom)
 		If !Empty(cPedTriang)
 			ajusteSC6(cCodPed,cPedTriang)
 		EndIf
-
 	EndIf
 
 	//Operação triangular para atender Ercal - Cesar J. Santos 29/06/2023..;
@@ -4214,13 +4247,23 @@ Static Function GeraPedido(cOrdem,cCodPlaca,cNumPCom)
 		EndIf
 	Next i
 
-	// ZC4->( DBCloseArea() )
-
 	MsgAlert("Remessa do Contrato Gerado com Sucesso! "+SC5->C5_NUM)
 
 	//Fatura Nota Fiscal
 	If lGeraNF
 		MsgRun("Aguarde... Faturando Pedido de Venda!!!","",{|| CursorWait(),	U_NFeAutoFAT(cCodPed,cOrdem)  , CursorArrow()})	 	 //U_NFeAutoFAT(cPedidos,ZC3->ZC3_ORDEM)  , CursorArrow()})
+	EndIf
+
+	//¦+---------------------------------------------------------+¦
+	//¦¦Valida Venda para Industrialização
+	//¦+---------------------------------------------------------+¦
+	If ADB->ADB_XTIPO == "09"
+		If ExistBlock("MFAT201")
+			If !U_MFAT201(cCodPed)
+				SC5->( DbSeek(xFilial("SC5")+ cCodPed) )
+				eventoNFE("Excluir")
+			EndIf
+		EndIf
 	EndIf
 
 Return .T.
@@ -4796,27 +4839,24 @@ User Function MANCTR(nXOpc,nZOPC)//1  - manutenção 2 - gatilho manutenção
 	@ 77+nLnAjt,175 Msget oVlrFau Var nVlrFau Picture "@E 9,999,999.99" Size 50,10 Pixel of oDlgman
 
 	@ 77+nLnAjt,240 Say "Frete " Font oFont Pixel of oDlgman
-//@ 77+nLnAjt,295 Msget oGuiaST Var nGuiaST Picture "@E 9,999,999.99" Size 50,10 Pixel of oDlgman 
+	//@ 77+nLnAjt,295 Msget oGuiaST Var nGuiaST Picture "@E 9,999,999.99" Size 50,10 Pixel of oDlgman
 	@ 77+nLnAjt,295 Msget oVlrFre Var nVlrFre Picture "@E 9,999,999.99" Size 50,10 Pixel of oDlgman
-//@ 77+nLnAjt,295 Msget oGuiaST Var cGuiaST Picture "@!" Size 50,10 Pixel of oDlgman 
+	//@ 77+nLnAjt,295 Msget oGuiaST Var cGuiaST Picture "@!" Size 50,10 Pixel of oDlgman
 
-//campo observacao nfe  
+	//campo observacao nfe
 	@ 106+nLnAjt,010 Say "Obs. Nfe " Font oFont Pixel of oDlgman
 	@ 106+nLnAjt,055 Msget oObs Var cObs Picture "@!" Size 135,10 Pixel of oDlgman when .f.
 	@ 106+nLnAjt,240 Say "Lote" Font oFont Pixel of oDlgman
 	@ 106+nLnAjt,295 Msget oLote Var cLote Picture "@!" Size 06,10  when .f. Pixel of oDlgman
 
-//despesa transporte interna
+	//despesa transporte interna
 	@ 91+nLnAjt,240 Say "Desp transp " Font oFont Pixel of oDlgman
 	@ 91+nLnAjt,295 Msget oDesp Var nDesp Picture "@E 9,999,999.99" Size 50,10 Pixel of oDlgman
 
-//if Empty(cCliente)
+	//Browser Mark Contrato
 	u_MAN10B(Alltrim(cCliente),Alltrim(cLoja),nXOpc)
-//EndIf
 
-//if Empty(cCliente) .or. nXOpc == 2  
 	u_MAN10C(aContr,nXOpc,nZOPC)
-//EndIf                                                         
 
 	if nXOpc == 1
 	EndIf
@@ -4833,14 +4873,13 @@ User Function MANCTR(nXOpc,nZOPC)//1  - manutenção 2 - gatilho manutenção
 		@ 220+nLnAjt,420 BUTTON oButton2 PROMPT "Confirmar Manutenção"  SIZE 060, 012 OF oDlgman PIXEL   Action(ValManu(nXOpc)) //,fNopc := 1 ,GravaCarga(oBrw:aCols,nPesoIni,nPesoFim,aContr,nXOpc),oDlgman:End()
 		@ 220+nLnAjt,500 BUTTON oButton3 PROMPT "Cancelar" SIZE 045, 012 OF oDlgman PIXEL  			  	 Action(fNopc := 2 ,nXPesoFim := 0, nxPesoLiq := 0, nPeso := 0,oDlgman:End()) //Cesar J. Santos - 01/06/2023
 	Elseif nXOpc = 3
-//	@ 220+nLnAjt,450 BUTTON oButton2 PROMPT "Visualizar"  SIZE 045, 012 OF oDlgman PIXEL  	Action (fNopc := 1 ,oDlgman:End())
+		//	@ 220+nLnAjt,450 BUTTON oButton2 PROMPT "Visualizar"  SIZE 045, 012 OF oDlgman PIXEL  	Action (fNopc := 1 ,oDlgman:End())
 		@ 220+nLnAjt,500 BUTTON oButton3 PROMPT "Cancelar Manutenção" SIZE 060, 012 OF oDlgman PIXEL  Action (fNopc := 2 ,oDlgman:End())
 	EndIf
 
 	Activate MsDialog oDlgman Centered
 
-//Fecha a Area e elimina os arquivos de apoio criados em disco.        
-
+	//Fecha a Area e elimina os arquivos de apoio criados em disco.
 	if Select("QADA") > 1
 		QADA->( DbCloseArea() )
 	EndIf
@@ -4855,6 +4894,10 @@ User Function MANCTR(nXOpc,nZOPC)//1  - manutenção 2 - gatilho manutenção
 
 Return()
 
+/*/{Protheus.doc} FAT010 
+
+@type function
+/*/
 Static Function BuscaDist()
 
 //Manutenção gontijo balanja bj 850
@@ -4918,7 +4961,7 @@ User Function MAN10B(cCodCli,cLojaCli,nXOpc)
 	Local nLinhas
 
 	cProduto := Posicione('ZC4',1,xFilial('ZC4')+cXOrdem,"ZC4_PRODUT") // Cesar J. Santos - 01/06/2023
-//cContra  := Posicione('ZC4',1,xFilial('ZC4')+cXOrdem,"ZC4_CONTRA") //Carlos Daniel posicionar Contrato
+	//cContra  := Posicione('ZC4',1,xFilial('ZC4')+cXOrdem,"ZC4_CONTRA") //Carlos Daniel posicionar Contrato
 
 	cQryZ4:= " SELECT ZC4_CONTRA AS CONTRATO,ZC4_PRODUT AS PRODUTO FROM " + RETSQLNAME("ZC4")+ " ZC4"
 	cQryZ4+= " WHERE ZC4.D_E_L_E_T_ = ' '
@@ -5008,21 +5051,21 @@ User Function MAN10B(cCodCli,cLojaCli,nXOpc)
 	oTable:AddIndex("1", {"OKDA","CONTRATO","EMISSAO"} )
 	oTable:Create()
 
-//Define quais colunas (campos da TTRB) serao exibidas na 
-
+	//Define quais colunas (campos da TTRB) serao exibidas na
 	aCpoBro	:= {{ "OKDA"		,, "Mark"		  ,"@!" },;
 		{ "CONTRATO"	,, "Contrato"     ,"@!" },;
 		{ "EMISSAO"  	,, "Emissão"      ,"@!" }}
 
-//Alimenta o arquivo de apoio com os registros
-
+	//Alimenta o arquivo de apoio com os registros
 	If !Empty(cCodcli) //.AND. (nXOpc == 1 )// Inclusao OU MANUTENÇÃO 1 OU 4
 		QADA->( DbGotop() )
 		While  !QDBA->( Eof() )
 			RecLock("QADA",.T.)
-			QADA->CONTRATO:=  QDBA->ADA_NUMCTR
-			QADA->EMISSAO :=  STOD(QDBA->ADA_EMISSA)
+			QADA->OKDA		:=  IIF(QDBA->ADA_NUMCTR == ADA->ADA_NUMCTR, cMark, " ")
+			QADA->CONTRATO	:=  QDBA->ADA_NUMCTR
+			QADA->EMISSAO 	:=  STOD(QDBA->ADA_EMISSA)
 			QADA->( MsunLock() )
+
 			QDBA->( DbSkip() )
 		Enddo
 	Elseif nXOpc != 1 // Alterar ou Visualizar
@@ -5038,9 +5081,9 @@ User Function MAN10B(cCodCli,cLojaCli,nXOpc)
 
 			if nExiste == 0
 				RecLock("QADA",.T.)
-				QADA->CONTRATO:=  aCols[i,2]
-				QADA->EMISSAO :=  POSICIONE("ADA",1,xFILIAL("ADA")+aCols[i,2],"ADA_EMISSA")
-				QADA->OKDA := cMark
+				QADA->CONTRATO	:=  aCols[i,2]
+				QADA->EMISSAO 	:=  POSICIONE("ADA",1,xFILIAL("ADA")+aCols[i,2],"ADA_EMISSA")
+				QADA->OKDA 		:= cMark
 				QADA->( MsunLock() )
 			EndIf
 		Next i
@@ -5058,7 +5101,6 @@ User Function MAN10B(cCodCli,cLojaCli,nXOpc)
 			QDBA->( DbSkip() )
 		Enddo
 	EndIf
-
 
 	@ 002+nLnAjt+40,366 TO 120+nLnAjt+40,550 LABEL ' ' OF oDlgman PIXEL
 
@@ -5103,7 +5145,6 @@ User Function MAN10C(aContr,nXOpc,nzOPC)
 		nPesoInf:= 0
 
 		for nY:= 1 to Len(aContr)
-//tras o saldo do contrato apos selecionar omark
 			_Query:= " SELECT ADB_NUMCTR,ADB_CODPRO,ADB_DESPRO,SUM(ADB_QUANT - ADB_QTDEMP) SALDO, ADA.ADA_XMENOT FROM " + RETSQLNAME("ADB")+" ADB, " +RetSqlName("ADA")+" ADA"
 			_Query+= " WHERE ADB.D_E_L_E_T_ = ' ' "
 			_Query+= " AND ADA.D_E_L_E_T_ = ' ' "
@@ -5125,14 +5166,11 @@ User Function MAN10C(aContr,nXOpc,nzOPC)
 
 				// Salta registro se o saldo do produto for 0
 				if QADB->SALDO == 0
-
 					QADB->( DbSkip() )
-
 				Else
 					nova := len(aCols)+1
 					//adiciona contrato selecionado se tiver mais
 					AADD(aCols,Array((Len(aHeader)+1)))
-
 
 					For i:= 1 to Len(aHeader)
 						aCols[nova][i] := CriaVar(aHeader[i][2])
@@ -5177,13 +5215,9 @@ User Function MAN10C(aContr,nXOpc,nzOPC)
 					aCols[linha,Ascan(aHeader,{|x| Upper(AllTrim(x[2]))=="ZC4_DESCRI"})]:= QADB->ADB_DESPRO
 					aCols[linha,Ascan(aHeader,{|x| Upper(AllTrim(x[2]))=="ZC4_QTDE"})]  := QADB->SALDO // Quantidade em toneladas
 					aCols[linha,Ascan(aHeader,{|x| Upper(AllTrim(x[2]))=="ZC4_MENOTA"})]  := QADB->ADA_XMENOT // MENSAGEM NOTA NFE
-
 				EndIf
-
 				QADB->( DbSkip() )
-
 			enddo
-
 		next nY
 
 		//BuscaDist() //Função para calcular quantitade distribuida. Cesar J. Santos 28/06/2023
@@ -5230,6 +5264,8 @@ User Function MAN10C(aContr,nXOpc,nzOPC)
 			oMark:oBrowse:Refresh()
 		Else // Chama função para carregar dados quando opcao for editar
 			u_FATMAN(nzOPC)
+
+			U_VaLinhaF(.F.)
 
 			if nXOpc == 4 //Manutenção de Pesagem
 				oMark:oBrowse:Enable()
@@ -5355,11 +5391,11 @@ User Function FATMAN(nzOPC)
 		aCols[linha,Ascan(aHeader,{|x| Upper(AllTrim(x[2]))=="ZC4_MENOTA"})] := QRZC4->ZC4_MENOTA //MONTA ACOLS
 		//aCols[linha,Ascan(aHeader,{|x| Upper(AllTrim(x[2]))=="ZC4_PALET"})] := QRZC4->ZC4_PALET
 
-		IF nzOPC = 2
-			aCols[linha,Ascan(aHeader,{|x| Upper(AllTrim(x[2]))=="ZC4_QTDE"})]  := 0
-		Else
-			aCols[linha,Ascan(aHeader,{|x| Upper(AllTrim(x[2]))=="ZC4_QTDE"})]  := QRZC4->ZC4_QTDE
-		EndIf
+		// IF nzOPC = 2
+		// 	aCols[linha,Ascan(aHeader,{|x| Upper(AllTrim(x[2]))=="ZC4_QTDE"})]  := 0
+		// Else
+		aCols[linha,Ascan(aHeader,{|x| Upper(AllTrim(x[2]))=="ZC4_QTDE"})]  := QRZC4->ZC4_QTDE
+		// EndIf
 
 		oBrw:SetArray(aCols)
 		oBrw:Refresh(.T.)
@@ -5404,7 +5440,7 @@ Static Function Dispman()
 	MSUNLOCK()
 
 	oMark:oBrowse:Refresh()
-// Adiciona Contratos? Marcados na MsSelect no Array
+	// Adiciona Contratos? Marcados na MsSelect no Array
 	QADA->(DbGotop())
 	While QADA->(!EOF())
 
@@ -5415,7 +5451,7 @@ Static Function Dispman()
 		QADA->(Dbskip())
 	Enddo
 
-// Se nenhum Contrato foi marcada apaga o que estiver no aCols
+	// Se nenhum Contrato foi marcada apaga o que estiver no aCols
 	if Len(aReg) == 0
 		aCols:= {}
 	EndIf
@@ -5425,8 +5461,7 @@ Static Function Dispman()
 	oBrw:SetArray(aCols)
 	oBrw:Refresh(.T.)
 
-//Chama Função que atualiza a GetDados dos Produtos
-
+	//Chama Função que atualiza a GetDados dos Produtos
 	u_MAN10C(aReg)
 
 Return()
