@@ -95,10 +95,10 @@ User Function LegendaF()
 	Local cCadastro:= "Status Ordem de Carregamento"
 
 	aCores1  := {	{'BR_AMARELO',"Aguardando Carregamento" },;
-					{'BR_LARANJA',"Aguardando Pesagem Final"},;
-					{'BR_AZUL',"Aguardando Faturamento"},;
-					{'BR_VERMELHO',"Pedido(s)com Bloqueio"},;
-					{'BR_VERDE',"Ordem Faturada"}}
+		{'BR_LARANJA',"Aguardando Pesagem Final"},;
+		{'BR_AZUL',"Aguardando Faturamento"},;
+		{'BR_VERMELHO',"Pedido(s)com Bloqueio"},;
+		{'BR_VERDE',"Ordem Faturada"}}
 
 	BrwLegenda(cCadastro,"Ordem de Carregamento",acores1)
 
@@ -2429,7 +2429,7 @@ User Function FAT010A(nXOpc)
 	//@ 77+nLnAjt,295 Msget oGuiaST Var nGuiaST Picture "@E 9,999,999.99" Size 50,10 Pixel of oDlg
 	//@ 77+nLnAjt,295 Msget oGuiaST Var cGuiaST Picture "@!" Size 50,10 Pixel of oDlg
 
-	//campo observacao nfe  
+	//campo observacao nfe
 	@ 106+nLnAjt,010 Say "Obs. Contrato " Font oFont Pixel of oDlg
 	@ 106+nLnAjt,055 Msget oObs Var cObs Picture "@!" Size 135,10 when .f. Pixel of oDlg
 	//Campo referente ao lote
@@ -2459,14 +2459,14 @@ User Function FAT010A(nXOpc)
 	EndIf
 	//verificar se tinha algo Carlos Daniel
 	if nXOpc == 1
-	//  oPesoFim:Disable()
-	//  oPesoFim:Refresh()
+		//  oPesoFim:Disable()
+		//  oPesoFim:Refresh()
 	EndIf
 	fNopc := 0
 
 	//nxOPC = 1 = Inclusão
 	//nxOPC = 2 = Alteração
-	//NXOPC = 4 = Manutenção 
+	//NXOPC = 4 = Manutenção
 	//NXOPC = 3 = Visualizar
 
 	if nXOpc = 1
@@ -2479,16 +2479,16 @@ User Function FAT010A(nXOpc)
 		@ 220+nLnAjt,420 BUTTON oButton2 PROMPT "Confirmar Manutenção"  SIZE 060, 012 OF oDlg PIXEL    Action (fNopc := 1 ,GravaCarga(oBrw:aCols,nPesoIni,nPesoFim,aContr,nXOpc),oDlg:End()  )
 		@ 220+nLnAjt,500 BUTTON oButton3 PROMPT "Cancelar" SIZE 045, 012 OF oDlg PIXEL  			   Action (fNopc := 2 ,oDlg:End())
 	Elseif nXOpc = 3
-	//	 u_FAT010B(cCliente,cLoja,nXOpc)
-	//	 u_FAT010C(aContr,nXOpc,1)	
-	//	@ 220+nLnAjt,450 BUTTON oButton2 PROMPT "Visualizar"  SIZE 045, 012 OF oDlg PIXEL  	Action (fNopc := 1 ,oDlg:End())
+		//	 u_FAT010B(cCliente,cLoja,nXOpc)
+		//	 u_FAT010C(aContr,nXOpc,1)
+		//	@ 220+nLnAjt,450 BUTTON oButton2 PROMPT "Visualizar"  SIZE 045, 012 OF oDlg PIXEL  	Action (fNopc := 1 ,oDlg:End())
 		@ 220+nLnAjt,500 BUTTON oButton3 PROMPT "Cancelar" SIZE 045, 012 OF oDlg PIXEL  Action (fNopc := 2 ,oDlg:End())
 	EndIf
 
 	//Aadd(aButtons,{"BMPINCLUIR" ,{||iif(nXOpc == 1,nPesoIni:=u_FAT0510(1,nPesoIni,nPesoFim),nPesoFim:=u_FAT0510(2,nPesoIni,nPesoFim)),}, "Pesagem","Pesagem"})
 	Activate MsDialog oDlg Centered //ON INIT EnchoiceBar(oDlg,{|| IIF(nXOpc == 3, oDlg:End(),u_FAT010D(oBrw:aCols,nPesoIni,nPesoFim,aContr,nXOpc))},{|| RollBackSX8(),oDlg:End()},,aButtons)
 
-	//Fecha a Area e elimina os arquivos de apoio criados em disco.        
+	//Fecha a Area e elimina os arquivos de apoio criados em disco.
 	if Select("QADA") > 1
 		QADA->( DbCloseArea() )
 	EndIf
@@ -2631,8 +2631,8 @@ User Function FAT010B(cCodCli,cLojaCli,nXOpc)
 	//cArq:= Criatrab(_stru,.T.)
 	//if Select("QADA")> 1
 	//	QADA->( DbCloseArea() )
-	//EndIf	
-	//DbUseArea(.t.,,carq,"QADA")  
+	//EndIf
+	//DbUseArea(.t.,,carq,"QADA")
 
 	if Select("QADA")> 1
 		QADA->( DbCloseArea() )
@@ -2643,7 +2643,7 @@ User Function FAT010B(cCodCli,cLojaCli,nXOpc)
 	oTable:AddIndex("1", {"OKDA","CONTRATO","EMISSAO"} )
 	oTable:Create()
 
-	//Define quais colunas (campos da TTRB) serao exibidas na 
+	//Define quais colunas (campos da TTRB) serao exibidas na
 
 	aCpoBro	:= {{ "OKDA"		,, "Mark"		  ,"@!" },;
 		{ "CONTRATO"	,, "Contrato"     ,"@!" },;
@@ -3113,9 +3113,9 @@ User Function FAT010D(aDados,nPesoIni,nPesoFim,aContr,nXOpc)
 
 			For i:=1 to len(aMarcado)
 				If i != Len(aMarcado)
-					cContratos :=  "'" + aMarcado[i,1] + "'" + ","
+					cContratos :=  "'" + Alltrim(aMarcado[i,1]) + "'" + ","
 				Else
-					cContratos +=  "'" + aMarcado[i,1] + "'"
+					cContratos +=  "'" + Alltrim(aMarcado[i,1]) + "'"
 				EndIf
 			Next i
 
@@ -3530,8 +3530,10 @@ User Function ValPesoF(lConfirma,nPesoIni,nPesoFim,nOpc)
 	//Local nPalet   := 0
 	Local nPosQtde := aScan(aHeader,{ |x| Upper(AllTrim(x[2])) == "ZC4_QTDE" })
 	Local nPosProd := aScan(aHeader,{ |x| Upper(AllTrim(x[2])) == "ZC4_PRODUT" })
+	Local nPosCTR := aScan(aHeader,{ |x| Upper(AllTrim(x[2])) == "ZC4_CONTRA" })
 	Local i := 0
 
+	Local aArea		:= GetArea()
 
 	If Type("n") <> " N"
 		n := 1
@@ -3544,79 +3546,67 @@ User Function ValPesoF(lConfirma,nPesoIni,nPesoFim,nOpc)
 
 			if oBrw:aCols[i,len(aHeader)+1] == .F.
 				if nOpc != 3
+
+					DbSelectArea("ADA")
+					ADA->(DbSetOrder(1))
+					ADA->(DbSeek(FwXfilial("ADA") + oBrw:aCols[i,nPosCTR])) // Filial + Contrato
+
 					if i == n
 						cUm      := POSICIONE("SB1",1,xFILIAL("SB1")+oBrw:aCols[i,nPosProd],"B1_UM")
 						nPesoLiq :=0//POSICIONE("SB1",1,xFILIAL("SB1")+oBrw:aCols[i,nPosProd],"B1_PESO") Cesar J. Santos - 09/06/2023
 
 						//Posicona aqui quando seleciono a qtd no contrato.
-						if AllTrim(cUm) == "TN" .and. nPesoLiq == 0
-							nPesoInf+= M->ZC4_QTDE * 1000
-							nVlrFre := ADA->ADA_XDESPU
+						if AllTrim(cUm) == "TN" .And. nPesoLiq == 0
+							nPesoInf	+= M->ZC4_QTDE * 1000
+							nVlrFre 	:= ADA->ADA_XDESPU
+
 							If ADA->ADA_XFRETE <> 0
 								nVlrFre := M->ZC4_QTDE * nVlrFre //FRETE DE ACORDO COM QUANTIDADE
-								nDesp := 0
+								nDesp 	:= 0
+
 							ElseIf nDesp <> 0
-								nDesp := M->ZC4_QTDE * nVlrFre //FRETE DE ACORDO COM QUANTIDADE
+								nDesp 	:= M->ZC4_QTDE * nVlrFre //FRETE DE ACORDO COM QUANTIDADE
 								nVlrFre := 0
 							Else
-								nDesp := 0
+								nDesp 	:= 0
 								nVlrFre := 0
 							EndIf
 						else
-							nPesoInf += nPesoLiq
-							nPesoInf+= M->ZC4_QTDE * 1000
-							nVlrFre := ADA->ADA_XDESPU
+							nPesoInf 	+= nPesoLiq
+							nPesoInf	+= M->ZC4_QTDE * 1000
+
+							nVlrFre 	:= ADA->ADA_XDESPU
+
 							If ADA->ADA_XFRETE <> 0
 								nVlrFre := M->ZC4_QTDE * nVlrFre //FRETE DE ACORDO COM QUANTIDADE
-								nDesp := 0
+								nDesp 	:= 0
+
 							ElseIf nDesp <> 0
-								nDesp := M->ZC4_QTDE * nVlrFre //FRETE DE ACORDO COM QUANTIDADE
+								nDesp 	:= M->ZC4_QTDE * nVlrFre //FRETE DE ACORDO COM QUANTIDADE
 								nVlrFre := 0
 							Else
-								nDesp := 0
+								nDesp 	:= 0
 								nVlrFre := 0
 							EndIf
 						EndIf
 
-						BuscaDist()
-
 					else
 
-						cUm :=POSICIONE("SB1",1,xFILIAL("SB1")+oBrw:aCols[i,nPosProd],"B1_UM")
-						nPesoLiq :=0//POSICIONE("SB1",1,xFILIAL("SB1")+oBrw:aCols[i,nPosProd],"B1_PESO") Cesar J. Santos - 09/06/2023
-						if AllTrim(cUm) = "TN" .and. nPesoLiq = 0
-							nPesoInf+= oBrw:aCols[i,nPosQtde] * 1000
+						cUm 		:= POSICIONE("SB1",1,xFILIAL("SB1")+oBrw:aCols[i,nPosProd],"B1_UM")
+						nPesoLiq 	:= 0//POSICIONE("SB1",1,xFILIAL("SB1")+oBrw:aCols[i,nPosProd],"B1_PESO") Cesar J. Santos - 09/06/2023
+
+						If AllTrim(cUm) = "TN" .and. nPesoLiq = 0
+							nPesoInf	+= oBrw:aCols[i,nPosQtde] * 1000
 						Else
-							nPesoInf += nPesoLiq
+							nPesoInf 	+= nPesoLiq
 						EndIf
 					EndIf
 
 					oPesoInf:Refresh()
 					oVlrFre:Refresh()//ATUALIZA VALOR FRETE DE ACORDO COM QUANTIDADE
 					oDesp:Refresh()
-				/*
-				if oBrw:aCols[i,5] != ""  .and. nOpc == 3 // Chamada de gatilho
-					
-					if 	oBrw:aCols[i,5] == "PM" // Palet Madeira
-						nPalet+= GETMV("MV_XPLTMAD") * 	oBrw:aCols[i,6]  // Peso Palet Madeira * Qtde Palet do produto
-						
-					elseif 	oBrw:aCols[i,5] == "PF" // Palet Ferro	
-						nPalet+=  GETMV("MV_XPLTFER") * 	oBrw:aCols[i,6]  // Peso Palet Ferro * Qtde Palet do produto					
-					else // Container      
-						nPalet+=  GETMV("MV_XCONTAI") * 	oBrw:aCols[i,6] // Peso Container * Qtde de Container
-					EndIf
-						                                                
-					//nPesoLiq := (nPesoFim - nPesoIni) - nPalet
-					//oPesoLiq:Refresh()
-					   
-					Return oBrw:aCols[i,6]
-
 				EndIf
-				*/
-				EndIf
-
 			EndIf
-
 		Next i
 
 	elseif lConfirma // chamada da funcao no momento da confirmação de inclusao ou alteração
@@ -3656,6 +3646,11 @@ User Function ValPesoF(lConfirma,nPesoIni,nPesoFim,nOpc)
 		EndIf
 
 	EndIf
+
+	BuscaDist()
+
+
+	RestArea(aArea)
 
 Return .F.
 
@@ -4855,7 +4850,6 @@ Return()
 Static Function BuscaDist()
 
 //Manutenção gontijo balanja bj 850
-
 	nPesoDist := (nxPesoLiq - nPesoInf) - nDescon
 
 //validacao peso tolerancia
